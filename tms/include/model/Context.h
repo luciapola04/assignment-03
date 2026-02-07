@@ -1,5 +1,4 @@
 #include "HWPlatform.h"
-#include "UserPanel.h"
 #ifndef __CONTEXT__
 #define __CONTEXT__
 

@@ -1,12 +1,9 @@
 #include <Arduino.h>
 #include "model/HWPlatform.h"
 #include "model/Context.h"
-#include "tasks/HangarTask.h"
-#include "tasks/SerialMonitorTask.h"
-#include "tasks/AlarmTask.h"
-#include "tasks/BlinkingTask.h"
-#include "tasks/DoorTask.h"
 #include "kernel/Scheduler.h"
+#include "tasks/StatusTask.h"
+#include "tasks/ConnectionTask.h"
 #include "kernel/Logger.h"
 
 #define BASE_PERIOD 50
@@ -28,12 +25,14 @@ void setup() {
   context = new Context();
   context->init();
 
-  Task* doorTask = new AlarmTask(hw->getMotor(),context);
-  doorTask->init(100);
+  Task* statusTask = new StatusTask(context);
+  statusTask->init(150);
 
-  
+  Task* connectionTask = new ConnectionTask(context);
+  connectionTask->init(100);
 
-  sched.addTask(serialTask);
+  sched.addTask(statusTask);
+  sched.addTask(connectionTask);
 }
 
 void loop() {

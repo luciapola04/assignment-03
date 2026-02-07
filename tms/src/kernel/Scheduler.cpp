@@ -1,23 +1,13 @@
 #include "kernel/Scheduler.h"
-#include <TimerOne.h>
-
-volatile bool timerFlag;
-
-void timerHandler(void){
-  timerFlag = true;
-}
+#include <Arduino.h>
 
 void Scheduler::init(int basePeriod){
   this->basePeriod = basePeriod;
-  timerFlag = false;
-  long period = 1000l*basePeriod;
-  Timer1.initialize(period);
-  Timer1.attachInterrupt(timerHandler);
   nTasks = 0;
 }
 
 bool Scheduler::addTask(Task* task){
-  if (nTasks < MAX_TASKS-1){
+  if (nTasks < MAX_TASKS){ 
     taskList[nTasks] = task;
     nTasks++;
     return true;
@@ -27,9 +17,7 @@ bool Scheduler::addTask(Task* task){
 }
   
 void Scheduler::schedule(){   
-  while (!timerFlag){}
-  timerFlag = false;
-
+  
   for (int i = 0; i < nTasks; i++){
     if (taskList[i]->isActive()){
       if (taskList[i]->isPeriodic()){
@@ -44,4 +32,6 @@ void Scheduler::schedule(){
       }
     }
   }
+  
+  vTaskDelay(pdMS_TO_TICKS(basePeriod)); 
 }
