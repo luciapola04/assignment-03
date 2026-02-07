@@ -18,7 +18,7 @@ void setup() {
   Serial.begin(115200);
 
   sched.init(BASE_PERIOD);
-  Logger.log("Drone hangar");
+  Logger.log("Water Channel System");
 
   hw = new HWPlatform();
   hw->init();
