@@ -3,25 +3,13 @@
  * thanks to FreeRTOS support.  
  *
  */
+#include <Arduino.h>
  
 TaskHandle_t Task1;
 TaskHandle_t Task2;
 
 const int led_1 = 2; // LED_BUILTIN;
 const int led_2 = 5;
-
-void setup() {
-  Serial.begin(115200); 
-  
-  pinMode(led_1, OUTPUT);
-  pinMode(led_2, OUTPUT);
-
-  xTaskCreatePinnedToCore(Task1code,"Task1",10000,NULL,1,&Task1,0);                         
-  delay(500); 
-
-  xTaskCreatePinnedToCore(Task2code,"Task2",10000,NULL,1,&Task2,1);          
-  delay(500); 
-}
 
 void Task1code(void* parameter){
   delay(500);
@@ -47,6 +35,20 @@ void Task2code(void* parameter){
     delay(1000);
   }
 }
+
+void setup() {
+  Serial.begin(115200); 
+  
+  pinMode(led_1, OUTPUT);
+  pinMode(led_2, OUTPUT);
+
+  xTaskCreatePinnedToCore(Task1code,"Task1",10000,NULL,1,&Task1,0);                         
+  delay(500); 
+
+  xTaskCreatePinnedToCore(Task2code,"Task2",10000,NULL,1,&Task2,1);          
+  delay(500); 
+}
+
 
 void loop() {
   Serial.print("this is the main loop running on core ");
