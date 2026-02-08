@@ -1,4 +1,3 @@
-/*
 #ifndef __SERIALTASK__
 #define __SERIALTASK__
 
@@ -21,5 +20,3 @@ private:
 };
 
 #endif
-
-*/
