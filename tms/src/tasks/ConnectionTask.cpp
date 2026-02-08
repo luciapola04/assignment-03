@@ -6,6 +6,7 @@ PubSubClient client(espClient);
 
 ConnectionTask::ConnectionTask(Context* pContext) {
     this->pContext = pContext;
+    this->pContext->setMQTTClient(&client);
     setState(DISCONNECTED);
 }
 
@@ -15,11 +16,15 @@ void ConnectionTask::tick() {
 
     case DISCONNECTED:
         if (checkAndSetJustEntered()) {
+            client.disconnect();
+            WiFi.disconnect();
+
             log("Stato: DISCONNECTED. Avvio WiFi...");
             WiFi.mode(WIFI_STA);
             WiFi.begin(ssid, password);
+            pContext->setSystemOnline(false);
+            pContext->setMqttError(false);
         }
-        log("prova");
 
         if (WiFi.status() == WL_CONNECTED) {
             log("WiFi Connesso! IP: " + WiFi.localIP().toString());
@@ -36,6 +41,8 @@ void ConnectionTask::tick() {
         if (checkAndSetJustEntered()) {
             log("Stato: CONNECTING_MQTT. Setup Server...");
             client.setServer(mqtt_server, 1883);
+            pContext->setSystemOnline(false);
+            
         }
 
         if (!client.connected()) {
@@ -56,35 +63,30 @@ void ConnectionTask::tick() {
             setState(CONNECTED);
         }
         
-        // Se si perde il WiFi mentre cerchiamo MQTT
         if (WiFi.status() != WL_CONNECTED) {
             setState(DISCONNECTED);
         }
         break;
 
-    // --- STATO 4: CONNECTED ---
     case CONNECTED:
         if (checkAndSetJustEntered()) {
             log("Stato: CONNECTED (Sistema Online)");
-            // Qui potresti aggiornare il Context, es: pContext->isOnline = true;
+            pContext->setSystemOnline(true);
         }
 
-        // Manteniamo viva la connessione MQTT
         client.loop();
 
-        // Controllo errori
         if (WiFi.status() != WL_CONNECTED) {
             log("Persa connessione WiFi!");
             setState(DISCONNECTED);
-        } else if (!client.connected()) {
+        } else if (!client.connected() || this->pContext->isMqttError()) {
             log("Persa connessione MQTT!");
-            setState(CONNECTING_MQTT);
+            setState(DISCONNECTED);
         }
         break;
     }
 }
 
-// --- METODI DI SUPPORTO FSM ---
 
 void ConnectionTask::setState(ConnectionState newState) {
     this->state = newState;

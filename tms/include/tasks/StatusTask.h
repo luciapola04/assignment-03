@@ -9,15 +9,15 @@
 class StatusTask: public Task {
 
 public:
-  StatusTask(Context* pContext); 
+  StatusTask(Context* pContext, Led* ledKO, Led* ledOK, Sonar* sonar); 
   void tick();
 
 private:
   enum StatusState { OK, ALARM};
   void setState(StatusState state);
   long elapsedTimeInState();
-  void log(const String& msg);
   
+  void log(const String& msg);
   bool checkAndSetJustEntered();
   
   long stateTimestamp;
@@ -25,6 +25,10 @@ private:
 
   Context* pContext;
   StatusState state;
+  Led* ledOK;
+  Led* ledKO;
+  Sonar* sonar;
+  char msg[MSG_BUFFER_SIZE];
 };
 
 #endif

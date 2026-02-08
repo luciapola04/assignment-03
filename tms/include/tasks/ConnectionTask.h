@@ -21,13 +21,11 @@ private:
   const char* ssid = "iPhone di Leonardo";
   const char* password = "00000000";
   const char* mqtt_server = "broker.mqtt-dashboard.com";
-  const char* mqtt_topic = "esiot-2025";
 
   enum ConnectionState {DISCONNECTED,CONNECTING_MQTT,CONNECTED};
   void setState(ConnectionState state);
   long elapsedTimeInState();
   void log(const String& msg);
-  
   bool checkAndSetJustEntered();
   
   ConnectionState state;
