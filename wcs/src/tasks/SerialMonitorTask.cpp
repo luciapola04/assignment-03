@@ -68,7 +68,7 @@ void SerialMonitorTask::sendSystemState(){
   String valveOpening = ""; 
   valveOpening = String(pContext->getValvePerc());
 
-  String msg = "wcs:st:" + WCSStateStr + ":" + valveOpening;
+  String msg = "st:vo:" + WCSStateStr + ":" + valveOpening;
 
   MsgService.sendMsg(msg);
 }
