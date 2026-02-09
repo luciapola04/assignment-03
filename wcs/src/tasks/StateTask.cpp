@@ -6,9 +6,9 @@
 StateTask::StateTask(HWPlatform* pHW, Context* pContext, UserPanel* pUserPanel): 
     pHw(pHW), pContext(pContext), pUserPanel(pUserPanel) {
     precPressed = false;
-    lastState = MANUAL;
+    lastState = AUTOMATIC;
     pContext->setManualState(LOCAL);
-    setState(MANUAL);
+    setState(AUTOMATIC);
 }
   
 void StateTask::tick(){
@@ -38,6 +38,7 @@ void StateTask::tick(){
         case MANUAL: {
             if(this->checkAndSetJustEntered()) {
                 Logger.log("Dentro MANUAL");
+                pContext->setWCSState(MANUAL);
                 lastState = MANUAL;
                 pHw->getMotor()->on();
                 oldValue = -1;
@@ -75,6 +76,7 @@ void StateTask::tick(){
         case AUTOMATIC: {
             if(this->checkAndSetJustEntered()) {
                 Logger.log("Dentro AUTOMATIC");
+                pContext->setWCSState(AUTOMATIC);
                 lastState = AUTOMATIC;
                 pHw->getMotor()->on();
             }
@@ -87,6 +89,7 @@ void StateTask::tick(){
         case UNCONNECTED: {
             if(this->checkAndSetJustEntered()) {
                 Logger.log("Dentro UNCONNECTED");
+                pContext->setWCSState(UNCONNECTED);
             }
 
             break;
