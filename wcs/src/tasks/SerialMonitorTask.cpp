@@ -44,10 +44,9 @@ void SerialMonitorTask::checkSerialMonitor(){
         if (cleanContent.equals("UNCONNECTED")) {
           pContext->setConnession(false);
           pContext->setWCSState(UNCONNECTED);
-          delete msg;
-          return;
+        } else {
+          pContext->setWCSState(cleanContent.equals("AUTOMATIC") ? AUTOMATIC : MANUAL);
         }
-        pContext->setWCSState(cleanContent.equals("AUTOMATIC") ? AUTOMATIC : MANUAL);
       } else if (content.startsWith("v:")) {
         cleanContent.replace("v:", "");
         int val = cleanContent.toInt();
