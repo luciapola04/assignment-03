@@ -43,12 +43,12 @@ void SerialMonitorTask::checkSerialMonitor(){
         cleanContent.replace("m:", "");
         cleanContent.trim();
         int val = cleanContent.toInt();
-        if (val == 1) {
+        if (val == UNCONNECTED_VAL) {
           pContext->setConnession(false);
-        } else if(val == 2){
+        } else if(val == AUTOMATIC_VAL){
           pContext->setWCSState(AUTOMATIC);
           pContext->setConnession(true);
-        } else if(val == 3){
+        } else if(val == MANUAL_VAL){
           pContext->setWCSState(MANUAL);
           pContext->setConnession(true);
         }
@@ -56,7 +56,7 @@ void SerialMonitorTask::checkSerialMonitor(){
         cleanContent.replace("v:", "");
         cleanContent.trim();
         int val = cleanContent.toInt();
-        if (val >= 0 && val <= 100){
+        if (val >= MIN_PERC && val <= MAX_PERC){
           Logger.log("Received valve opening: " + String(val )+ "%");
           pContext->setValve(val);
         } else {

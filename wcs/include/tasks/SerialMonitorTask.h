@@ -4,6 +4,12 @@
 #include "kernel/Task.h"
 #include "model/Context.h"
 
+#define UNCONNECTED_VAL 1
+#define AUTOMATIC_VAL 2
+#define MANUAL_VAL 3
+#define MIN_PERC 0
+#define MAX_PERC 100
+
 class SerialMonitorTask : public Task
 {
 

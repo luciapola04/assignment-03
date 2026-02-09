@@ -21,7 +21,10 @@ public class MainController {
     private int currentValveOpening = 0;
 
     static final String MSG_PREFIX = "st:";
-	static final String VALV_STATE = "vo:";
+    static final String VALV_STATE = "vo:";
+    static final Integer CLOSED = 0;
+    static final Integer HALF_OPEN = 50;
+    static final Integer OPEN = 100;
 
     public enum SystemState {
         CONNECTED, UNCONNECTED
@@ -82,7 +85,7 @@ public class MainController {
                         System.err.println("[ALLARME] Timeout MQTT! Passo a UNCONNECTED");
                         currentState = SystemState.UNCONNECTED;
                         serialMonitor.sendMsg("m:1");
-                        setValve(100);
+                        setValve(OPEN);
 
                     }else {
             
@@ -121,17 +124,17 @@ public class MainController {
                 int targetValve = 0;
 
                 if (currentDistance < L1) {
-                    targetValve = 0;
+                    targetValve = CLOSED;
                     startL1Time = 0;
                 } else if (currentDistance >= L1 && currentDistance < L2) {
                     if (startL1Time == 0) {
                         startL1Time = now;
-                        targetValve = 0;
+                        targetValve = CLOSED;
                     } else if ((now - startL1Time) > T1) {
-                        targetValve = 50;
+                        targetValve = HALF_OPEN;
                     }
                 } else if (currentDistance >= L2) {
-                    targetValve = 100;
+                    targetValve = OPEN;
                     startL1Time = 0;
                 }
 

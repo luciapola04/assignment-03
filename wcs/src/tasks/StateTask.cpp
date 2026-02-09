@@ -22,14 +22,16 @@ void StateTask::tick(){
 
     bool isPressed = pHw->getButton()->isPressed();
     if (isPressed && !precPressed) {
-        if (state == MANUAL) {
-            if (pHw->getMotor()->isOn()) {
+        if (pContext->isConnected()) {
+            if (state == MANUAL) {
+                if (pHw->getMotor()->isOn()) {
+                    pHw->getMotor()->off();
+                }
+                pContext->setWCSState(AUTOMATIC);
+            } else {
                 pHw->getMotor()->off();
+                pContext->setWCSState(MANUAL);
             }
-            pContext->setWCSState(AUTOMATIC);
-        } else {
-            pHw->getMotor()->off();
-            pContext->setWCSState(MANUAL);
         }
     }
     precPressed = isPressed;
