@@ -41,14 +41,20 @@ void SerialMonitorTask::checkSerialMonitor(){
 
       if (content.startsWith("m:")) {
         cleanContent.replace("m:", "");
-        if (cleanContent.equals("UNCONNECTED")) {
+        cleanContent.trim();
+        int val = cleanContent.toInt();
+        if (val == 1) {
           pContext->setConnession(false);
-          pContext->setWCSState(UNCONNECTED);
-        } else {
-          pContext->setWCSState(cleanContent.equals("AUTOMATIC") ? AUTOMATIC : MANUAL);
+        } else if(val == 2){
+          pContext->setWCSState(AUTOMATIC);
+          pContext->setConnession(true);
+        } else if(val == 3){
+          pContext->setWCSState(MANUAL);
+          pContext->setConnession(true);
         }
       } else if (content.startsWith("v:")) {
         cleanContent.replace("v:", "");
+        cleanContent.trim();
         int val = cleanContent.toInt();
         if (val >= 0 && val <= 100){
           Logger.log("Received valve opening: " + String(val )+ "%");

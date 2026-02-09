@@ -8,7 +8,7 @@ void Context::init(){
     this->wcsState = UNCONNECTED;
     this->manualState = LOCAL;
     this->valvePerc = 0;
-    this->connected = true;
+    this->connected = false;
 }
 
 void Context::setWCSState(WCSState state) { this->wcsState = state; }
