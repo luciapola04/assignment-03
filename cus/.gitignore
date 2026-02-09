@@ -1,1 +1,22 @@
-/bin/
+# Log files
+*.log
+
+# code folder
+.vscode/
+
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
+build/
+bin/
+
+# Ignore Eclipse settings
+.project
+.settings/
+.classpath
+
+# Ignore Java compiled files
+*.class
+*.DS_Store
+*/deleteme/
