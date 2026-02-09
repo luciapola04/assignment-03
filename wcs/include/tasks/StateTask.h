@@ -12,6 +12,7 @@ StateTask(HWPlatform* pHw,Context* pContext,UserPanel* pUserPanel);
   virtual void tick();
 
 private:
+  void readCommand();
   void setState(WCSState s);
   long elapsedTimeInState();
   bool checkAndSetJustEntered();
@@ -25,6 +26,7 @@ private:
   bool precPressed;
 
   WCSState state;
+  WCSState lastState;
   long stateTimestamp;
   long sensorConditionStartTime;
   bool justEntered;  

@@ -6,6 +6,8 @@
 StateTask::StateTask(HWPlatform* pHW, Context* pContext, UserPanel* pUserPanel): 
     pHw(pHW), pContext(pContext), pUserPanel(pUserPanel) {
     precPressed = false;
+    lastState = MANUAL;
+    pContext->setManualState(LOCAL);
     setState(MANUAL);
 }
   
@@ -14,7 +16,7 @@ void StateTask::tick(){
     if (!pContext->isConnected() && state != UNCONNECTED) {
         setState(UNCONNECTED);
     } else if (pContext->isConnected() && state == UNCONNECTED) {
-        setState(AUTOMATIC);
+        setState(lastState);
     }
 
     bool isPressed = pHw->getButton()->isPressed();
@@ -36,23 +38,35 @@ void StateTask::tick(){
         case MANUAL: {
             if(this->checkAndSetJustEntered()) {
                 Logger.log("Dentro MANUAL");
+                lastState = MANUAL;
                 pHw->getMotor()->on();
                 oldValue = -1;
             }
 
-            int currentValue = pHw->getPot()->getValue();
+            switch (pContext->getManualState())
+            {
+            case LOCAL:
+                int currentValue = pHw->getPot()->getValue();
 
-            if (abs(currentValue - oldValue) > 2) {
+                if (abs(currentValue - oldValue) > 2) {
 
-                int servoAngle = map(currentValue, 1, 1020, 0, 90);
+                    int servoAngle = map(currentValue, 1, 1020, 0, 90);
 
-                int perc = map(currentValue, 1, 1020, 0, 100);
+                    int perc = map(currentValue, 1, 1020, 0, 100);
 
-                oldValue = currentValue;
+                    oldValue = currentValue;
 
-                pHw->getMotor()->setPosition(servoAngle);
+                    pHw->getMotor()->setPosition(servoAngle);
 
-                pContext->setValve(perc);
+                    pContext->setValve(perc);
+                }
+                break;
+            
+            case REMOTE:
+
+                readCommand();
+
+                break;
             }
 
             break;
@@ -61,20 +75,11 @@ void StateTask::tick(){
         case AUTOMATIC: {
             if(this->checkAndSetJustEntered()) {
                 Logger.log("Dentro AUTOMATIC");
+                lastState = AUTOMATIC;
                 pHw->getMotor()->on();
             }
 
-            int currentValue = pContext->getValvePerc();
-
-            if (currentValue != oldValue) {
-
-                int servoAngle = map(currentValue, 0, 100, 0, 90);
-
-                pHw->getMotor()->setPosition(servoAngle);
-
-                oldValue = currentValue;
-
-            }
+            readCommand();
 
             break;
         }
@@ -89,6 +94,21 @@ void StateTask::tick(){
     }
 
     updateDisplay();
+}
+
+void StateTask::readCommand() {
+
+    int currentValue = pContext->getValvePerc();
+
+    if (currentValue != oldValue) {
+
+        int servoAngle = map(currentValue, 0, 100, 0, 90);
+
+        pHw->getMotor()->setPosition(servoAngle);
+
+        oldValue = currentValue;
+
+    }
 }
 
 void StateTask::updateDisplay() {

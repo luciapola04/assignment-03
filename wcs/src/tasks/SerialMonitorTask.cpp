@@ -36,6 +36,13 @@ void SerialMonitorTask::checkSerialMonitor(){
         return; 
       }
 
+      if (content.equalsIgnoreCase("UNCONNECTED")) {
+        pContext->setConnession(false);
+        Logger.log("UNCONNECTED"); //per debug
+        delete msg;
+        return;
+      }
+
       String cleanContent = content;
       cleanContent.replace("%", "");
 
@@ -61,7 +68,7 @@ void SerialMonitorTask::sendSystemState(){
     WCSStateStr = "UNCONNECTED";
   } else if(pContext->getWCSState() == MANUAL) {
     WCSStateStr = "MANUAL";
-  } else {
+  } else if(pContext->getWCSState() == AUTOMATIC){
     WCSStateStr = "AUTOMATIC";
   }
 
@@ -69,7 +76,7 @@ void SerialMonitorTask::sendSystemState(){
   valveOpening = String(pContext->getValvePerc());
 
   String msg = "st:vo:" + WCSStateStr + ":" + valveOpening;
-
+  
   MsgService.sendMsg(msg);
 }
 
