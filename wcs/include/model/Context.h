@@ -3,7 +3,9 @@
 #ifndef __CONTEXT__
 #define __CONTEXT__
 
-enum WCSState {MANUAL, AUTOMATIC, UNCONNECTED, LOCAL, REMOTE};
+enum WCSState {MANUAL, AUTOMATIC, UNCONNECTED};
+
+enum ManualState {LOCAL,REMOTE};
 
 class Context {
     public:
@@ -19,12 +21,12 @@ class Context {
         void setConnession(bool connession); //lo setta il CUS
         bool isConnected();
 
-        void setManualState(WCSState manualState);
-        WCSState getManualState();
+        void setManualState(ManualState manualState);
+        ManualState getManualState();
 
     private:
         WCSState wcsState;
-        WCSState manualState;
+        ManualState manualState;
 
         int valvePerc;
         bool connected;

@@ -20,5 +20,5 @@ int Context::getValvePerc() { return this->valvePerc; }
 void Context::setConnession(bool connession) { this->connected = connession; }
 bool Context::isConnected() { return this->connected; }
 
-void Context::setManualState(WCSState manualState) { this->manualState = manualState; }
-WCSState Context::getManualState() { return this->manualState; }
+void Context::setManualState(ManualState manualState) { this->manualState = manualState; }
+ManualState Context::getManualState() { return this->manualState; }

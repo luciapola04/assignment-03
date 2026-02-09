@@ -6,6 +6,8 @@
 StateTask::StateTask(HWPlatform* pHW, Context* pContext, UserPanel* pUserPanel): 
     pHw(pHW), pContext(pContext), pUserPanel(pUserPanel) {
     precPressed = false;
+    
+    pHw->getMotor()->on();
 }
   
 void StateTask::tick(){
@@ -24,12 +26,8 @@ void StateTask::tick(){
     if (isPressed && !precPressed) {
         if (pContext->isConnected()) {
             if (state == MANUAL) {
-                if (pHw->getMotor()->isOn()) {
-                    pHw->getMotor()->off();
-                }
                 pContext->setWCSState(AUTOMATIC);
             } else {
-                pHw->getMotor()->off();
                 pContext->setWCSState(MANUAL);
             }
         }
@@ -41,37 +39,41 @@ void StateTask::tick(){
         case MANUAL: {
             if(this->checkAndSetJustEntered()) {
                 Logger.log("Dentro MANUAL");
-                pContext->setWCSState(MANUAL);
                 lastState = MANUAL;
-                pHw->getMotor()->on();
                 oldValue = -1;
             }
 
             switch (pContext->getManualState())
             {
-            case LOCAL:
-                int currentValue = pHw->getPot()->getValue();
+                case LOCAL: {
 
-                if (abs(currentValue - oldValue) > 2) {
+                    int currentValue = pHw->getPot()->getValue();
+                    if (abs(currentValue - oldValue) > 2) {
 
-                    int servoAngle = map(currentValue, 1, 1020, 0, 90);
+                        int servoAngle = map(currentValue, 1, 1020, 0, 90);
 
-                    int perc = map(currentValue, 1, 1020, 0, 100);
+                        int perc = map(currentValue, 1, 1020, 0, 100);
 
-                    oldValue = currentValue;
+                        oldValue = currentValue;
 
-                    pHw->getMotor()->setPosition(servoAngle);
+                        pHw->getMotor()->setPosition(servoAngle);
 
-                    pContext->setValve(perc);
+                        pContext->setValve(perc);
+                    }
+                    break;
+
+                } 
+                
+                case REMOTE: {
+
+                    readCommand();
+
+                    break;
+
                 }
-                break;
-            
-            case REMOTE:
 
-                readCommand();
-
-                break;
-            }
+                    
+                }
 
             break;
         }
@@ -79,9 +81,7 @@ void StateTask::tick(){
         case AUTOMATIC: {
             if(this->checkAndSetJustEntered()) {
                 Logger.log("Dentro AUTOMATIC");
-                pContext->setWCSState(AUTOMATIC);
                 lastState = AUTOMATIC;
-                pHw->getMotor()->on();
             }
 
             readCommand();
@@ -92,8 +92,6 @@ void StateTask::tick(){
         case UNCONNECTED: {
             if(this->checkAndSetJustEntered()) {
                 Logger.log("Dentro UNCONNECTED");
-                pContext->setWCSState(UNCONNECTED);
-                pHw->getMotor()->off();
             }
 
             break;
