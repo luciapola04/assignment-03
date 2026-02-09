@@ -1,4 +1,4 @@
-package esiot.assignment_03.model;
+package it.unibo.assignment03.comms;
 
 import java.util.concurrent.*;
 

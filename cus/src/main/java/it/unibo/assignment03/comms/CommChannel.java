@@ -1,4 +1,4 @@
-package esiot.assignment_03.model;
+package it.unibo.assignment03.comms;
 /**
  * Simple interface for an async msg communication channel
  * @author aricci
