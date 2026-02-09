@@ -41,7 +41,7 @@ public class MainController {
         this.running = true;
         this.currentState = SystemState.UNCONNECTED;
         this.currentMode = SystemMode.AUTOMATIC;
-        serialMonitor.sendMsg("m:UNCONNECTED");
+        serialMonitor.sendMsg("m:1");
     }
 
     public void start() {
@@ -81,7 +81,7 @@ public class MainController {
                         
                         System.err.println("[ALLARME] Timeout MQTT! Passo a UNCONNECTED");
                         currentState = SystemState.UNCONNECTED;
-                        serialMonitor.sendMsg("m:UNCONNECTED");
+                        serialMonitor.sendMsg("m:1");
                         setValve(100);
 
                     }else {
@@ -98,7 +98,7 @@ public class MainController {
                         System.out.println("[INFO] Connessione ripristinata.");
                         processMqttMessage(mqttMsg);
                         currentState = SystemState.CONNECTED;
-                        serialMonitor.sendMsg("m:AUTOMATIC");
+                        serialMonitor.sendMsg("m:2");
                     }
                     break;
             }
@@ -205,10 +205,10 @@ public class MainController {
     private void toggleMode() {
         if (currentMode == SystemMode.AUTOMATIC) {
             currentMode = SystemMode.MANUAL;
-            serialMonitor.sendMsg("m:MANUAL");
+            serialMonitor.sendMsg("m:3");
         } else {
             currentMode = SystemMode.AUTOMATIC;
-            serialMonitor.sendMsg("m:AUTOMATIC");
+            serialMonitor.sendMsg("m:2");
         }
     }
 
