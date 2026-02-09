@@ -34,5 +34,5 @@ dependencies {
 
 application {
     // Define the main class for the application.
-    mainClass.set("it.unibo.iot03.main.java")
+    mainClass.set("it.unibo.assignment03.Launcher")
 }

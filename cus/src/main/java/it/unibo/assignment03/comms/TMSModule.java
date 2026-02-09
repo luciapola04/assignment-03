@@ -5,7 +5,6 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 public class TMSModule implements MqttCallback {
 
@@ -24,10 +23,11 @@ public class TMSModule implements MqttCallback {
         this.broker = broker;
         this.topic = topic;
         this.clientId = "Java-Client-" + System.currentTimeMillis();
-        this.timeoutThresholdMs = timeoutMs;
         this.dataQueue = new LinkedBlockingQueue<>();
+
         this.tmsConnected = false;
-        
+        this.timeoutThresholdMs = timeoutMs;
+
         this.lastMessageTime = System.currentTimeMillis();
 
         try {
@@ -90,7 +90,6 @@ public class TMSModule implements MqttCallback {
 
     public boolean isTimeout() {
         long currentTime = System.currentTimeMillis();
-        //Se è passato più tempo di T2 dall'ultimo messaggio
         if ((currentTime - lastMessageTime) > timeoutThresholdMs) {
             if (tmsConnected) {
                 System.out.println("[TMS] Timeout detected! Device connection considered lost.");
@@ -123,9 +122,7 @@ public class TMSModule implements MqttCallback {
             System.out.println("[TMS] First message received. Module is ONLINE.");
             tmsConnected = true;
         }
-        
-        // Debug opzionale
-        // System.out.println("[DEBUG] Msg received: " + payload);
+
     }
 
     @Override
