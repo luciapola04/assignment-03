@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DBS - Smart Tank</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="d-flex flex-column min-vh-100 bg-light">
+
+    <header class="bg-primary text-white text-center py-4 mb-4 shadow-sm">
+        <div class="container">
+            <h1 class="display-5 fw-bold">Smart Tank Operating System</h1>
+            <p class="lead">Dashboard di monitoraggio del sistema</p>
+        </div>
+    </header>
+
+    <div class="container mb-5">
+        <div class="row g-4">
+            
+            <div class="col-lg-8">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white fw-bold">
+                        Andamento Livello Acqua
+                    </div>
+                    <div class="card-body">
+                        <canvas id="levelChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-dark text-white fw-bold">
+                        Pannello di Controllo
+                    </div>
+                    <div class="card-body d-flex flex-column gap-3">
+                        
+                        <div class="p-3 border rounded bg-light">
+                            <strong>Current State:</strong> 
+                            <span id="state-display" class="badge bg-secondary ms-2">--</span>
+                        </div>
+
+                        <div class="p-3 border rounded bg-light">
+                            <strong>Valve Opening:</strong> 
+                            <span id="valve-display" class="fw-bold text-primary">0</span>%
+                        </div>
+
+                        <div class="mt-2">
+                            <label for="valve" class="form-label">Set Valve Opening (0-100):</label>
+                            <input type="range" class="form-range" id="valve" name="valve" min="0" max="100" value="0">
+                        </div>
+
+                        <hr>
+
+                        <div class="d-grid gap-2">
+                            <button id="btn-manual" class="btn btn-outline-primary" onclick="setMode('MANUAL')">
+                                MANUAL MODE
+                            </button>
+                            <button id="btn-auto" class="btn btn-primary" onclick="setMode('AUTOMATIC')">
+                                AUTOMATIC MODE
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer class="mt-auto py-3 bg-dark text-white text-center">
+        <div class="container">
+            <p class="mb-1 fw-bold">Embedded System and IoT - Assignment-03</p>
+            <p class="small mb-1">
+                Lucia Pola: <a href="mailto:lucia.pola@studio.unibo.it" class="text-white text-decoration-underline">lucia.pola@studio.unibo.it</a>
+            </p>
+            <p class="small mb-1">
+                Leonardo Meloni: <a href="mailto:leonardo.meloni@studio.unibo.it" class="text-white text-decoration-underline">leonardo.meloni@studio.unibo.it</a>
+            </p>
+            <p class="small text-muted mb-0">A.A 2025/2026</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
