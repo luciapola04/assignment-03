@@ -1,1 +1,143 @@
 <!DOCTYPE html>
+<html lang="it">
+    <head>
+        <meta charset="utf-8">
+        <title>DBS - Smart Tank</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <link rel="stylesheet" href="mystyle.css">
+    </head>
+    <body>
+        <header>
+            <h1>Smart Tank Operating System</h1>
+        </header>
+        
+        <main>
+            <div class="chart-container">
+                <canvas id="levelChart"></canvas>
+            </div>
+        </main>
+
+        <aside>
+            <p>Current State: <span id="state-display">--</span></p>
+            <p>Valve Opening: <span id="valve-display">--</span>%</p>
+            
+            <label for="valve">Valve Opening (between 0 and 100):</label>
+            <p>
+                <input type="range" id="valve" name="valve" min="0" max="100" onchange="sendValveValue(this.value)">
+            </p>
+            
+            <button onclick="setMode('MANUAL')">MANUAL</button>
+            <button onclick="setMode('AUTOMATIC')">AUTOMATIC</button>
+        </aside>
+
+        <footer>
+            <p>Embedded System and IoT - Assignment-03</p>
+            <p>Lucia Pola:<a href="mailto:lucia.pola@studio.unibo.it">lucia.pola@studio.unibo.it</a></p>
+            <p>Leonardo Meloni:<a href="mailto:leonardo.meloni@studio.unibo.it">leonardo.meloni@studio.unibo.it</a></p>
+            <p>A.A 2025/2026</p>
+        </footer>
+
+        <script>
+            // --- CONFIGURAZIONE ---
+            const API_DATA_URL = "http://localhost:8080/api/data"; // Endpoint GET dati
+            const API_MODE_URL = "http://localhost:8080/api/mode"; // Endpoint POST comandi (se implementato)
+            
+            // --- INIZIALIZZAZIONE GRAFICO ---
+            const ctx = document.getElementById('levelChart').getContext('2d');
+            const myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [], // Orari
+                    datasets: [{
+                        label: 'Livello Acqua (cm)',
+                        data: [], // Valori
+                        borderColor: 'rgba(54, 162, 235, 1)', // Blu
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4 // Linea curva
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Livello (cm)' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Orario' }
+                        }
+                    },
+                    animation: false // Disabilita animazione per aggiornamenti rapidi
+                }
+            });
+
+            // --- FUNZIONE PER RECUPERARE I DATI ---
+            async function fetchData() {
+                try {
+                    const response = await fetch(API_DATA_URL);
+                    if (!response.ok) throw new Error("Errore HTTP");
+
+                    // Riceviamo un array JSON dal backend Vert.x
+                    const jsonArray = await response.json();
+
+                    // Se il backend manda il dato più nuovo per primo (LIFO), dobbiamo invertire l'array
+                    // per visualizzarlo correttamente sulla linea temporale (da sx a dx)
+                    const dataReversed = jsonArray.reverse();
+
+                    // Prendiamo solo gli ultimi 20 punti se ce ne sono troppi
+                    const recentData = dataReversed.slice(-20);
+
+                    // Mappiamo i dati per il grafico
+                    const labels = recentData.map(item => {
+                        const d = new Date(item.time);
+                        return d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds();
+                    });
+                    const values = recentData.map(item => item.value);
+
+                    // Aggiorniamo il grafico
+                    myChart.data.labels = labels;
+                    myChart.data.datasets[0].data = values;
+                    myChart.update();
+
+                    // --- Aggiorniamo anche la sidebar (ASIDE) con l'ultimo dato disponibile ---
+                    if (recentData.length > 0) {
+                        const lastPoint = recentData[recentData.length - 1];
+                        // Nota: Assumo che il JSON abbia campi extra o che tu faccia una chiamata separata per lo stato
+                        // Se il tuo DataPoint ha solo valore e tempo, aggiorniamo solo il livello per ora.
+                        // Per Stato e Valvola servirebbe che il backend li inviasse nel JSON.
+                        
+                        // Esempio fittizio se il JSON contenesse anche lo stato:
+                        // document.getElementById('state-display').innerText = lastPoint.state || "--";
+                        // document.getElementById('valve-display').innerText = lastPoint.valveValue || "--";
+                    }
+
+                } catch (error) {
+                    console.error("Impossibile recuperare i dati:", error);
+                }
+            }
+
+            // --- FUNZIONI PER I BOTTONI (Opzionali per ora) ---
+            function setMode(mode) {
+                console.log("Imposto modalità:", mode);
+                // Qui faresti la fetch POST verso il backend
+                fetch(API_MODE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: mode })
+                }).catch(err => console.error(err));
+            }
+
+            function sendValveValue(val) {
+                console.log("Valvola a:", val);
+                // Logica per inviare il valore della slide...
+            }
+
+            // Avvia il loop di aggiornamento (ogni 1 secondo)
+            setInterval(fetchData, 1000);
+            fetchData(); // Prima chiamata immediata
+
+        </script>
+    </body>
+</html>
