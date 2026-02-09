@@ -1,4 +1,3 @@
-/*
 #include "tasks/SerialMonitorTask.h"
 #include "kernel/MsgService.h"
 #include "kernel/Logger.h"
@@ -32,15 +31,23 @@ void SerialMonitorTask::checkSerialMonitor(){
       String content = msg->getContent();
       content.trim();
 
-      Logger.log("Received cmd: " + content);
-
-      if (content == "takeoff-req"){
-        pContext->setTakeOffRequest(true);
-      } 
-      else if (content == "landing-req"){
-        pContext->setLandingRequest(true);
+      if (content.length() == 0) {
+        delete msg;
+        return; 
       }
-      
+
+      String cleanContent = content;
+      cleanContent.replace("%", "");
+
+      int val = cleanContent.toInt();
+
+      if (val >= 0 && val <= 100){
+        Logger.log("Received valve opening: " + String(val )+ "%");
+        pContext->setValve(val);
+      } else {
+        Logger.log("Valore apertura valvola invalido o fuori range!");
+      }
+
       delete msg; 
     }
   }
@@ -48,36 +55,21 @@ void SerialMonitorTask::checkSerialMonitor(){
 
 void SerialMonitorTask::sendSystemState(){
   
-  String droneStateStr = "UNKNOWN";
-  String hangarStateStr = "NORMAL";
+  String WCSStateStr = "UNKNOWN";
 
-  if (pContext->isInAlarm()) {
-    hangarStateStr = "ALARM";
-  } else if (pContext->isInPreAlarm()) {
-    hangarStateStr = "PRE-ALARM";
+  if (!pContext->isConnected()) {
+    WCSStateStr = "UNCONNECTED";
+  } else if(pContext->getWCSState() == MANUAL) {
+    WCSStateStr = "MANUAL";
+  } else {
+    WCSStateStr = "AUTOMATIC";
   }
 
+  String valveOpening = ""; 
+  valveOpening = String(pContext->getValvePerc());
 
-  if (pContext->isInTakeOff()) {
-    droneStateStr = "TAKE OFF";
-  }else if(pContext->isInLanding()) {
-        droneStateStr = "LANDING";
-  } 
-  else if (pContext->isDroneInside()) {
-    droneStateStr = "REST";
-  } 
-  else {
-    droneStateStr = "OPERATING";
-  }
-
-  String distance = "--"; 
-  if(pContext->isInLanding()){
-    distance = String(pContext->getDroneDistance());
-  }
-
-  String msg = "dh:st:" + droneStateStr + ":" + hangarStateStr + ":" + String(distance);
+  String msg = "st:vo:" + WCSStateStr + ":" + valveOpening;
 
   MsgService.sendMsg(msg);
 }
 
-*/

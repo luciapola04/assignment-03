@@ -21,9 +21,8 @@ private:
   Context* pContext;
   UserPanel* pUserPanel;
 
-  int oldPotValue;
-  bool isClosing;
-  long doorTimer;
+  int oldValue;
+  bool precPressed;
 
   WCSState state;
   long stateTimestamp;

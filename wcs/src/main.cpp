@@ -29,13 +29,14 @@ void setup() {
   userPanel = new UserPanel(hw->getLcd());
   userPanel->init();
 
-  /* Task* serialTask = new SerialMonitorTask(context);
-  serialTask->init(150); */
+  Task* serialTask = new SerialMonitorTask(context);
+  serialTask->init(150);
 
   Task* stateTask = new StateTask(hw, context, userPanel);
-  stateTask->init(300);
+  stateTask->init(150);
 
   sched.addTask(stateTask);
+  sched.addTask(serialTask);
 }
 
 void loop() {
