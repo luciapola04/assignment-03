@@ -1,16 +1,16 @@
 package it.unibo.assignment03.comms;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.CorsHandler;
+import it.unibo.assignment03.controller.MainController;
 import it.unibo.assignment03.model.DataPoint;
-
-import java.util.Date;
-import java.util.LinkedList;
 
 /*
  * Data Service as a vertx event-loop 
@@ -18,20 +18,29 @@ import java.util.LinkedList;
 public class HTTPServer extends AbstractVerticle {
 
 	private int port;
-	private static final int MAX_SIZE = 10;
-	private LinkedList<DataPoint> values;
+	private MainController controller;
 	
-	public HTTPServer(int port) {
-		values = new LinkedList<>();		
+	public HTTPServer(int port, MainController controller) {
+		this.controller = controller;	
 		this.port = port;
 	}
 
 	@Override
 	public void start() {		
 		Router router = Router.router(vertx);
+		router.route()
+			.handler(
+				CorsHandler.create()
+					.addOrigin("*")
+					.allowedMethod(HttpMethod.GET)
+					.allowedMethod(HttpMethod.POST)
+					.allowedHeader("Content-Type")
+				);
 		router.route().handler(BodyHandler.create());
-		router.post("/api/data").handler(this::handleAddNewData);
-		router.get("/api/data").handler(this::handleGetData);		
+		router.get("/api/data").handler(this::handleGetStatus);
+		router.get("/api/data").handler(this::handleGetHistory);	
+		router.post("/api/mode/switch").handler(this::handleSwitchMode);
+        router.post("/api/valve/set").handler(this::handleSetValve);
 		vertx
 			.createHttpServer()
 			.requestHandler(router)
@@ -40,52 +49,46 @@ public class HTTPServer extends AbstractVerticle {
 		log("Service ready on port: " + port);
 	}
 	
-	private void handleAddNewData(RoutingContext routingContext) {
-    HttpServerResponse response = routingContext.response();
-    
-    try {
+	private void handleGetStatus(RoutingContext ctx) {
+        JsonObject status = new JsonObject();
+        status.put("level", controller.getCurrentDistance());
+        status.put("valve", controller.getCurrentValve());
+        status.put("mode", controller.getMode());
+        status.put("state", controller.getState());
         
-        JsonObject res = routingContext.body().asJsonObject();
-
-        if (res == null) {
-            sendError(400, response);
-            return;
-        }
-
-        if (!res.containsKey("value")) {
-            sendError(400, response);
-            return;
-        }
-
-        double value = res.getDouble("value");
-        long time = System.currentTimeMillis();
-        
-        values.addFirst(new DataPoint(value, time));
-        if (values.size() > MAX_SIZE) {
-            values.removeLast();
-        }
-        
-        log("New value: " + value + " on " + new Date(time));
-        response.setStatusCode(200).end();
-
-    } catch (Exception e) {
-        log("Errore parsing JSON: " + e.getMessage());
-        sendError(400, response);
+        ctx.response()
+            .putHeader("content-type", "application/json")
+            .end(status.encode());
     }
-}
-	
-	private void handleGetData(RoutingContext routingContext) {
-		JsonArray arr = new JsonArray();
-		for (DataPoint p: values) {
-			JsonObject data = new JsonObject();
-			data.put("time", p.getTimestamp());
-			data.put("value", p.getValue());
-			arr.add(data);
-		}
-		routingContext.response()
-			.putHeader("content-type", "application/json")
-			.end(arr.encodePrettily());
-	}
+    
+    private void handleGetHistory(RoutingContext ctx) {
+        JsonArray arr = new JsonArray();
+        for (DataPoint p: controller.getHistory()) {
+            JsonObject data = new JsonObject();
+            data.put("time", p.getTimestamp());
+            data.put("value", p.getValue());
+            arr.add(data);
+        }
+        ctx.response()
+            .putHeader("content-type", "application/json")
+            .end(arr.encode());
+    }
+
+    private void handleSwitchMode(RoutingContext ctx) {
+        controller.switchMode();
+        ctx.response().setStatusCode(200).end();
+    }
+
+    private void handleSetValve(RoutingContext ctx) {
+        JsonObject body = ctx.body().asJsonObject();
+        if (body != null && body.containsKey("value")) {
+            int val = body.getInteger("value");
+            controller.setValveManual(val);
+            ctx.response().setStatusCode(200).end();
+        } else {
+            ctx.response().setStatusCode(400).end();
+        }
+    }
 	
 	private void sendError(int statusCode, HttpServerResponse response) {
 		response.setStatusCode(statusCode).end();

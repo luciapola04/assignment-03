@@ -1,8 +1,14 @@
 package it.unibo.assignment03.controller;
 
+import java.util.LinkedList;
+import java.util.List;
+
+import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpServer;
 import it.unibo.assignment03.comms.CommChannel;
 import it.unibo.assignment03.comms.HTTPServer;
 import it.unibo.assignment03.comms.TMSComm;
+import it.unibo.assignment03.model.DataPoint;
 
 public class MainController {
 
@@ -12,21 +18,24 @@ public class MainController {
 
     private boolean running;
 
-    private SystemState currentState;
-    private SystemMode currentMode;
+    private volatile SystemState currentState;
+    private volatile SystemMode currentMode;
 
     private final double L1, L2;
     private final long T1;
 
-    private double currentDistance = 0;
+    private volatile double currentDistance = 0;
     private long startL1Time = 0;
-    private int currentValveOpening = 0;
+    private volatile int currentValveOpening = 0;
 
     static final String MSG_PREFIX = "st:";
     static final String VALV_STATE = "vo:";
     static final Integer CLOSED = 0;
     static final Integer HALF_OPEN = 50;
     static final Integer OPEN = 100;
+
+    private LinkedList<DataPoint> history = new LinkedList<>(); 
+    private final int MAX_HISTORY = 20;
 
     public enum SystemState {
         CONNECTED, UNCONNECTED
@@ -36,10 +45,12 @@ public class MainController {
         AUTOMATIC, MANUAL
     }
 
-    public MainController(HTTPServer httpServer, CommChannel serialMonitor, TMSComm mqttChannel, long T1, double L1, double L2) {
+    public MainController(CommChannel serialMonitor, TMSComm mqttChannel, long T1, double L1, double L2) {
         this.tmsModule = mqttChannel;
         this.serialMonitor = serialMonitor;
-        this.httpServer = httpServer;
+        Vertx vertx = Vertx.vertx();
+        this.httpServer = new HTTPServer(8080, this);
+        vertx.deployVerticle(httpServer);
         this.T1 = T1;
         this.L1 = L1;
         this.L2 = L2;
@@ -159,8 +170,16 @@ public class MainController {
         if (msg.contains("Distance")) {
             try {
                 String val = msg.split(":")[1];
-                this.currentDistance = Double.parseDouble(val);
+                double value = Double.parseDouble(val);
+                this.currentDistance = value;
                 System.out.println("Distanza:"+ val);
+
+                synchronized (history) {
+                    history.addFirst(new DataPoint(value, System.currentTimeMillis()));
+                    if (history.size() > MAX_HISTORY) {
+                        history.removeLast();
+                    }
+                }
             } catch (Exception e) {
                 System.err.println("Errore parsing MQTT: " + msg);
             }
@@ -201,21 +220,38 @@ public class MainController {
 
     // --- HELPER ---
 
-    private void setValve(int percentage) {
+    public synchronized void switchMode() {
+        if (currentMode == SystemMode.AUTOMATIC) {
+            currentMode = SystemMode.MANUAL;
+            serialMonitor.sendMsg("m:3"); // Manual mode command
+        } else {
+            currentMode = SystemMode.AUTOMATIC;
+            serialMonitor.sendMsg("m:2"); // Auto mode command
+        }
+    }
 
+    public synchronized void setValveManual(int percentage) {
+        if (currentMode == SystemMode.MANUAL) {
+            setValve(percentage);
+        } else {
+            System.out.println("[WARNING] Tentativo cambio valvola in AUTOMATIC ignorato.");
+        }
+    }
+
+    private void setValve(int percentage) {
         this.currentValveOpening = percentage;
         serialMonitor.sendMsg("v:" + percentage);
 
     }
 
-    //lo usermo per il web
-    private void toggleMode() {
-        if (currentMode == SystemMode.AUTOMATIC) {
-            currentMode = SystemMode.MANUAL;
-            serialMonitor.sendMsg("m:3");
-        } else {
-            currentMode = SystemMode.AUTOMATIC;
-            serialMonitor.sendMsg("m:2");
+    public double getCurrentDistance() { return currentDistance; }
+    public int getCurrentValve() { return currentValveOpening; }
+    public String getMode() { return currentMode.toString(); }
+    public String getState() { return currentState.toString(); }
+
+    public List<DataPoint> getHistory() {
+        synchronized (history) {
+            return new LinkedList<>(history);
         }
     }
 

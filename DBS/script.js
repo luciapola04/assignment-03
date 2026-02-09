@@ -1,143 +1,194 @@
-const API_DATA_URL = "http://localhost:8080/api/data";
-const API_MODE_URL = "http://localhost:8080/api/mode";
+// Configurazione URL (Se usi CORS con Java metti http://localhost:8080)
+const BASE_URL = "http://localhost:8080"; 
 
-const valveSlider = document.getElementById('valve');
-const valveDisplay = document.getElementById('valve-display');
-const stateDisplay = document.getElementById('state-display');
-const btnManual = document.getElementById('btn-manual');
-const btnAuto = document.getElementById('btn-auto');
+// Variabili di stato
+let currentSystemMode = ""; 
+let isDragging = false; 
 
-let currentMode = 'AUTOMATIC'; 
+// Riferimenti agli elementi DOM (per non cercarli ogni volta)
+const els = {
+    state: document.getElementById('state-display'),
+    valveVal: document.getElementById('valve-display'),
+    slider: document.getElementById('valve'),
+    btnManual: document.getElementById('btn-manual'),
+    btnAuto: document.getElementById('btn-auto')
+};
 
+// --- 1. Inizializzazione Grafico Chart.js ---
 const ctx = document.getElementById('levelChart').getContext('2d');
-const myChart = new Chart(ctx, {
+const levelChart = new Chart(ctx, {
     type: 'line',
     data: {
-        labels: [], 
+        labels: [],
         datasets: [{
             label: 'Livello Acqua (cm)',
             data: [],
-            borderColor: 'rgba(13, 110, 253, 1)', 
+            borderColor: '#0d6efd', // Bootstrap Primary Blue
             backgroundColor: 'rgba(13, 110, 253, 0.1)',
             borderWidth: 2,
-            pointRadius: 2,
+            pointRadius: 3,
             fill: true,
-            tension: 0.4 
+            tension: 0.3 
         }]
     },
     options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false, // Si adatta al contenitore Bootstrap
         scales: {
             y: {
                 beginAtZero: true,
-                title: { display: true, text: 'Livello (cm)' }
+                grid: { color: '#e9ecef' } // Grigio chiaro Bootstrap
             },
             x: {
-                title: { display: true, text: 'Orario' },
-                ticks: { maxTicksLimit: 10 } // Evita troppe etichette
+                grid: { display: false }
             }
         },
-        animation: false 
+        plugins: {
+            legend: { display: false } // Nascondiamo la legenda per pulizia
+        },
+        animation: false
     }
 });
 
-// --- 2. LOGICA INTERFACCIA (UI) ---
+// --- 2. Gestione Eventi Slider ---
 
-function updateInterface(mode) {
-    currentMode = mode;
-
-    if (mode === 'MANUAL') {
-        // --- MODALITÀ MANUALE ---
-        // Sblocca lo slider
-        valveSlider.disabled = false; 
-        
-        // Aggiorna bottoni: Manuale Pieno, Auto Vuoto
-        btnManual.className = "btn btn-primary"; 
-        btnAuto.className = "btn btn-outline-primary";
-    } else {
-        // --- MODALITÀ AUTOMATICA ---
-        // Blocca lo slider
-        valveSlider.disabled = true; 
-        
-        // Aggiorna bottoni: Auto Pieno, Manuale Vuoto
-        btnManual.className = "btn btn-outline-primary";
-        btnAuto.className = "btn btn-primary";
-    }
-}
-
-// Funzione chiamata al click dei bottoni
-function setMode(mode) {
-    console.log("Cambio modalità richiesto:", mode);
-    
-    // Aggiorna subito la grafica
-    updateInterface(mode);
-
-    // Invia comando al server
-    fetch(API_MODE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: mode })
-    })
-    .catch(err => console.error("Errore invio modalità:", err));
-}
-
-// Gestione Slider (solo visuale + invio)
-valveSlider.addEventListener('input', function() {
-    valveDisplay.innerText = this.value;
+// Quando l'utente trascina lo slider (aggiorna solo il numero a video)
+els.slider.addEventListener('input', (e) => {
+    isDragging = true;
+    els.valveVal.innerText = e.target.value;
 });
 
-valveSlider.addEventListener('change', function() {
-    // Invia il valore solo quando si rilascia il mouse (se siamo in MANUAL)
-    if (currentMode === 'MANUAL') {
-        console.log("Invio valore valvola:", this.value);
-        // Qui aggiungerai la fetch POST per la valvola se necessario
-        // fetch(..., { body: JSON.stringify({ valve: this.value }) })
-    }
+// Quando l'utente RILASCIA lo slider (manda il comando al server)
+els.slider.addEventListener('change', async (e) => {
+    isDragging = false;
+    await sendValveValue(e.target.value);
 });
 
-// --- 3. RECUPERO DATI (Loop) ---
-async function fetchData() {
+
+// --- 3. Logica di Aggiornamento ---
+
+async function fetchStatus() {
     try {
-        const response = await fetch(API_DATA_URL);
-        if (!response.ok) throw new Error("Errore HTTP");
-
-        const jsonArray = await response.json();
-        const dataReversed = jsonArray.reverse();
-        const recentData = dataReversed.slice(-20);
-
-        // Aggiornamento Grafico
-        myChart.data.labels = recentData.map(item => {
-            return new Date(item.time).toLocaleTimeString('it-IT');
-        });
-        myChart.data.datasets[0].data = recentData.map(item => item.value);
-        myChart.update();
-
-        // Aggiornamento Dati Testuali (se presenti nel JSON)
-        if (recentData.length > 0) {
-            const last = recentData[recentData.length - 1];
-            
-            // Esempio: se il backend invia lo stato, aggiorniamo la label
-            // if (last.state) stateDisplay.innerText = last.state;
-            
-            // Se siamo in AUTOMATICO, la valvola è controllata dal sistema.
-            // Aggiorniamo lo slider per mostrare cosa sta facendo il sistema
-            /* if (currentMode === 'AUTOMATIC' && last.valveValue !== undefined) {
-                valveSlider.value = last.valveValue;
-                valveDisplay.innerText = last.valveValue;
-            }
-            */
-        }
+        const response = await fetch(`${BASE_URL}/api/status`);
+        if (!response.ok) throw new Error("Server Error");
+        
+        const data = await response.json();
+        updateUI(data);
+        
+        // Recupera storico per il grafico
+        fetchHistory();
 
     } catch (error) {
-        console.error("Errore fetch dati:", error);
+        console.error("Errore connessione:", error);
+        setUIState("NOT_AVAILABLE");
     }
 }
 
-// --- 4. AVVIO ---
-// Imposta lo stato iniziale
-updateInterface('AUTOMATIC'); 
+async function fetchHistory() {
+    try {
+        const response = await fetch(`${BASE_URL}/api/history`);
+        if (response.ok) {
+            const historyData = await response.json();
+            updateChart(historyData);
+        }
+    } catch (e) { /* ignore */ }
+}
 
-// Avvia il loop
-setInterval(fetchData, 1000);
-fetchData();
+function updateUI(data) {
+    // 1. Aggiorna Badge Stato
+    setUIState(data.state);
+
+    // 2. Aggiorna Numero Valvola
+    els.valveVal.innerText = data.valve;
+    
+    // 3. Gestione Slider (Abilita solo in Manual + Connected)
+    const canControl = (data.mode === "MANUAL" && data.state === "CONNECTED");
+    els.slider.disabled = !canControl;
+    
+    // Aggiorna posizione cursore solo se l'utente non lo sta toccando
+    if (!isDragging) {
+        els.slider.value = data.valve;
+    }
+
+    // 4. Aggiorna Bottoni (Visualizza quale è attivo)
+    currentSystemMode = data.mode;
+    updateButtons(data.mode);
+}
+
+function setUIState(state) {
+    els.state.innerText = state;
+    
+    // Rimuovi vecchie classi colore
+    els.state.classList.remove('bg-secondary', 'bg-success', 'bg-danger', 'bg-warning');
+
+    // Assegna colore Bootstrap in base allo stato
+    switch(state) {
+        case 'CONNECTED':
+            els.state.classList.add('bg-success'); // Verde
+            break;
+        case 'UNCONNECTED':
+            els.state.classList.add('bg-danger');  // Rosso
+            break;
+        case 'NOT_AVAILABLE':
+        default:
+            els.state.classList.add('bg-secondary'); // Grigio
+            break;
+    }
+}
+
+function updateButtons(mode) {
+    // Gestione visuale dei bottoni (Outline vs Solid)
+    if (mode === "MANUAL") {
+        els.btnManual.classList.add('btn-primary');
+        els.btnManual.classList.remove('btn-outline-primary');
+        
+        els.btnAuto.classList.add('btn-outline-primary');
+        els.btnAuto.classList.remove('btn-primary');
+    } else {
+        els.btnAuto.classList.add('btn-primary');
+        els.btnAuto.classList.remove('btn-outline-primary');
+        
+        els.btnManual.classList.add('btn-outline-primary');
+        els.btnManual.classList.remove('btn-primary');
+    }
+}
+
+function updateChart(history) {
+    // Aggiorna i dati del grafico
+    const labels = history.map(d => new Date(d.time).toLocaleTimeString());
+    const values = history.map(d => d.value);
+
+    levelChart.data.labels = labels.reverse();
+    levelChart.data.datasets[0].data = values.reverse();
+    levelChart.update();
+}
+
+// --- 4. Chiamate API (Comandi Utente) ---
+
+async function sendValveValue(val) {
+    try {
+        await fetch(`${BASE_URL}/api/valve/set`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: parseInt(val) })
+        });
+    } catch (e) {
+        console.error("Errore invio valvola", e);
+    }
+}
+
+async function setMode(targetMode) {
+    // Evita chiamate inutili se siamo già in quella modalità
+    if (currentSystemMode === targetMode) return;
+
+    try {
+        await fetch(`${BASE_URL}/api/mode/switch`, { method: 'POST' });
+        fetchStatus(); // Aggiorna subito
+    } catch (e) {
+        console.error("Errore cambio modalità", e);
+    }
+}
+
+// Avvio Loop
+setInterval(fetchStatus, 1000);
+fetchStatus();
