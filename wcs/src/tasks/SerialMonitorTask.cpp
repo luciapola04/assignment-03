@@ -36,23 +36,27 @@ void SerialMonitorTask::checkSerialMonitor(){
         return; 
       }
 
-      if (content.equalsIgnoreCase("UNCONNECTED")) {
-        pContext->setConnession(false);
-        Logger.log("UNCONNECTED"); //per debug
-        delete msg;
-        return;
-      }
-
+      // v: ->>> percentuale apertuta, m: modalità
       String cleanContent = content;
-      cleanContent.replace("%", "");
 
-      int val = cleanContent.toInt();
-
-      if (val >= 0 && val <= 100){
-        Logger.log("Received valve opening: " + String(val )+ "%");
-        pContext->setValve(val);
-      } else {
-        Logger.log("Valore apertura valvola invalido o fuori range!");
+      if (content.startsWith("m:")) {
+        cleanContent.replace("m:", "");
+        if (cleanContent.equals("UNCONNECTED")) {
+          pContext->setConnession(false);
+          pContext->setWCSState(UNCONNECTED);
+          delete msg;
+          return;
+        }
+        pContext->setWCSState(cleanContent.equals("AUTOMATIC") ? AUTOMATIC : MANUAL);
+      } else if (content.startsWith("v:")) {
+        cleanContent.replace("v:", "");
+        int val = cleanContent.toInt();
+        if (val >= 0 && val <= 100){
+          Logger.log("Received valve opening: " + String(val )+ "%");
+          pContext->setValve(val);
+        } else {
+          Logger.log("Valore apertura valvola invalido o fuori range!");
+        }
       }
 
       delete msg; 

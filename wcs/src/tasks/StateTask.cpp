@@ -6,7 +6,6 @@
 StateTask::StateTask(HWPlatform* pHW, Context* pContext, UserPanel* pUserPanel): 
     pHw(pHW), pContext(pContext), pUserPanel(pUserPanel) {
     precPressed = false;
-    lastState = AUTOMATIC;
     pContext->setManualState(LOCAL);
     setState(AUTOMATIC);
 }
@@ -16,7 +15,7 @@ void StateTask::tick(){
     if (!pContext->isConnected() && state != UNCONNECTED) {
         setState(UNCONNECTED);
     } else if (pContext->isConnected() && state == UNCONNECTED) {
-        setState(lastState);
+        setState(AUTOMATIC);
     }
 
     bool isPressed = pHw->getButton()->isPressed();
