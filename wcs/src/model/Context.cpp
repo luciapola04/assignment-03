@@ -5,7 +5,8 @@ Context::Context(){
 }
 
 void Context::init(){
-    this->wcsState = AUTOMATIC;
+    this->wcsState = UNCONNECTED;
+    this->manualState = LOCAL;
     this->valvePerc = 0;
     this->connected = true;
 }

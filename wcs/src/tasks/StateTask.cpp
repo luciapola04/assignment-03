@@ -6,16 +6,18 @@
 StateTask::StateTask(HWPlatform* pHW, Context* pContext, UserPanel* pUserPanel): 
     pHw(pHW), pContext(pContext), pUserPanel(pUserPanel) {
     precPressed = false;
-    pContext->setManualState(LOCAL);
-    setState(AUTOMATIC);
 }
   
 void StateTask::tick(){
 
+    state = pContext->getWCSState();
+
     if (!pContext->isConnected() && state != UNCONNECTED) {
-        setState(UNCONNECTED);
-    } else if (pContext->isConnected() && state == UNCONNECTED) {
-        setState(AUTOMATIC);
+        pContext->setWCSState(UNCONNECTED);
+    }
+    else if (pContext->isConnected() && state == UNCONNECTED)
+    {
+        pContext->setWCSState(AUTOMATIC);
     }
 
     bool isPressed = pHw->getButton()->isPressed();
@@ -24,10 +26,10 @@ void StateTask::tick(){
             if (pHw->getMotor()->isOn()) {
                 pHw->getMotor()->off();
             }
-            setState(AUTOMATIC);
+            pContext->setWCSState(AUTOMATIC);
         } else {
             pHw->getMotor()->off();
-            setState(MANUAL);
+            pContext->setWCSState(MANUAL);
         }
     }
     precPressed = isPressed;
@@ -89,6 +91,7 @@ void StateTask::tick(){
             if(this->checkAndSetJustEntered()) {
                 Logger.log("Dentro UNCONNECTED");
                 pContext->setWCSState(UNCONNECTED);
+                pHw->getMotor()->off();
             }
 
             break;
