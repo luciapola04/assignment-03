@@ -6,7 +6,7 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class TMSModule implements MqttCallback {
+public class TMSComm implements MqttCallback {
 
     private String broker;
     private String clientId;
@@ -19,7 +19,7 @@ public class TMSModule implements MqttCallback {
     private boolean tmsConnected;
     private long timeoutThresholdMs;
 
-    public TMSModule(String broker, String topic, long timeoutMs) {
+    public TMSComm(String broker, String topic, long timeoutMs) {
         this.broker = broker;
         this.topic = topic;
         this.clientId = "Java-Client-" + System.currentTimeMillis();

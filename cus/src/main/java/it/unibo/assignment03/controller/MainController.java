@@ -1,12 +1,14 @@
 package it.unibo.assignment03.controller;
 
 import it.unibo.assignment03.comms.CommChannel;
-import it.unibo.assignment03.comms.TMSModule;
+import it.unibo.assignment03.comms.HTTPServer;
+import it.unibo.assignment03.comms.TMSComm;
 
 public class MainController {
 
-    private TMSModule tmsModule;
+    private TMSComm tmsModule;
     private CommChannel serialMonitor;
+    private HTTPServer httpServer;
 
     private boolean running;
 
@@ -34,9 +36,10 @@ public class MainController {
         AUTOMATIC, MANUAL
     }
 
-    public MainController(CommChannel serialMonitor, TMSModule mqttChannel, long T1, double L1, double L2) {
+    public MainController(HTTPServer httpServer, CommChannel serialMonitor, TMSComm mqttChannel, long T1, double L1, double L2) {
         this.tmsModule = mqttChannel;
         this.serialMonitor = serialMonitor;
+        this.httpServer = httpServer;
         this.T1 = T1;
         this.L1 = L1;
         this.L2 = L2;
@@ -49,6 +52,7 @@ public class MainController {
 
     public void start() {
         System.out.println("[CONTROLLER] Avvio del sistema...");
+        httpServer.start();
         tmsModule.start();
         this.runLoop();
     }

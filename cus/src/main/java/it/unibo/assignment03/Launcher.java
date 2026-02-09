@@ -1,8 +1,9 @@
 package it.unibo.assignment03;
 
 import it.unibo.assignment03.comms.CommChannel;
+import it.unibo.assignment03.comms.HTTPServer;
 import it.unibo.assignment03.comms.SerialCommChannel;
-import it.unibo.assignment03.comms.TMSModule;
+import it.unibo.assignment03.comms.TMSComm;
 import it.unibo.assignment03.controller.MainController;
 import jssc.SerialPortList;
 
@@ -21,13 +22,11 @@ public class Launcher {
         if (args.length > 0) {
             portName = args[0];
         } else {
-            //sennò la cerca
             String[] portNames = SerialPortList.getPortNames();
             if (portNames.length > 0) {
                 portName = portNames[0];
                 System.out.println("Porta trovata automaticamente: " + portName);
             } else {
-                //scelta fissa se non trova nulla
                 portName = "COM11"; 
                 System.err.println("Nessuna porta rilevata, provo il default: " + portName);
             }
@@ -35,9 +34,10 @@ public class Launcher {
 
         try{
             serialChannel = new SerialCommChannel(portName,115200);
-            TMSModule mqttChannel = new TMSModule(broker, topic, T2);
+            TMSComm mqttChannel = new TMSComm(broker, topic, T2);
+            HTTPServer httpServer = new HTTPServer(8080);
 
-            MainController controller = new MainController(serialChannel,mqttChannel,T1,L1,L2);
+            MainController controller = new MainController(httpServer,serialChannel,mqttChannel,T1,L1,L2);
             controller.start();
             
         }catch(Exception ex){
