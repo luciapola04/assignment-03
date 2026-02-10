@@ -54,7 +54,6 @@ public class HTTPServer extends AbstractVerticle {
         status.put("level", controller.getCurrentDistance());
         status.put("valve", controller.getCurrentValve());
         status.put("mode", controller.getMode());
-        status.put("state", controller.getState());
         
         ctx.response()
             .putHeader("content-type", "application/json")

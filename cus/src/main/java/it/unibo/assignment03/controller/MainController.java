@@ -161,7 +161,7 @@ public class MainController {
 
             case MANUAL:
 
-                break;
+            break;
 
         } 
     }
@@ -232,7 +232,8 @@ public class MainController {
 
     public synchronized void setValveManual(int percentage) {
         if (currentMode == SystemMode.MANUAL) {
-            setValve(percentage);
+            this.currentValveOpening = percentage;
+            serialMonitor.sendMsg("r:" + percentage);
         } else {
             System.out.println("[WARNING] Tentativo cambio valvola in AUTOMATIC ignorato.");
         }
@@ -246,8 +247,15 @@ public class MainController {
 
     public double getCurrentDistance() { return currentDistance; }
     public int getCurrentValve() { return currentValveOpening; }
-    public String getMode() { return currentMode.toString(); }
-    public String getState() { return currentState.toString(); }
+    public String getMode() { 
+
+        if(currentState == SystemState.CONNECTED){
+            return currentMode.toString();
+        }else{
+            return currentState.toString();
+        }
+    
+    }
 
     public List<DataPoint> getHistory() {
         synchronized (history) {
@@ -255,7 +263,5 @@ public class MainController {
         }
     }
 
-    public void stop() {
-        this.running = false;
-    }
+    public void stop() { this.running = false; }
 }
