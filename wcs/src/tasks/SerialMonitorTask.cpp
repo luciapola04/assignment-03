@@ -36,7 +36,7 @@ void SerialMonitorTask::checkSerialMonitor(){
         return; 
       }
 
-      // v: ->>> percentuale apertuta, m: modalità
+      // v: percentuale apertuta, m: modalità, r: percentuale da web
       String cleanContent = content;
 
       if (content.startsWith("m:")) {
@@ -54,26 +54,21 @@ void SerialMonitorTask::checkSerialMonitor(){
         }
       } else if (content.startsWith("v:")) {
         cleanContent.replace("v:", "");
-        cleanContent.trim();
         int val = cleanContent.toInt();
-        if (val >= MIN_PERC && val <= MAX_PERC){
-          Logger.log("Received valve opening: " + String(val )+ "%");
-          pContext->setValve(val);
-        } else {
-          Logger.log("Valore apertura valvola invalido o fuori range!");
+        if (pContext->getWCSState() == AUTOMATIC) {
+            if (val >= 0 && val <= 100){
+                pContext->setValve(val);
+            }
         }
       } else if (content.startsWith("r:")) {
         cleanContent.replace("r:", "");
-        cleanContent.trim();
         int val = cleanContent.toInt();
-        if (val >= MIN_PERC && val <= MAX_PERC){
-          Logger.log("Received valve opening: " + String(val )+ "%");
-          pContext->setValve(val);
-          pContext->setManualState(REMOTE);
-        }
-        else
-        {
-          Logger.log("Valore apertura valvola invalido o fuori range!");
+        if (pContext->getWCSState() == MANUAL) {
+            if (val >= 0 && val <= 100){
+                Logger.log("Comando Remoto ricevuto: " + String(val) + "%");
+                pContext->setValve(val);
+                pContext->setManualState(REMOTE);
+            }
         }
       }
 

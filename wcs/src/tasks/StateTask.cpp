@@ -17,10 +17,6 @@ void StateTask::tick(){
     if (!pContext->isConnected() && state != UNCONNECTED) {
         pContext->setWCSState(UNCONNECTED);
     }
-    else if (pContext->isConnected() && state == UNCONNECTED)
-    {
-        pContext->setWCSState(AUTOMATIC);
-    }
 
     bool isPressed = pHw->getButton()->isPressed();
     if (isPressed && !precPressed) {
@@ -39,13 +35,16 @@ void StateTask::tick(){
         case MANUAL: {
             if(this->checkAndSetJustEntered()) {
                 Logger.log("Dentro MANUAL");
-                lastState = MANUAL;
-                oldValue = -1;
+                oldValue = pHw->getPot()->getValue();
+                pContext->setManualState(LOCAL);
             }
 
             int currentValue = pHw->getPot()->getValue();
-            if (abs(currentValue - oldValue) > 5) {
-                pContext->setManualState(LOCAL);
+            if (abs(currentValue - oldValue) > 10) {
+                if (pContext->getManualState() == REMOTE) {
+                    Logger.log("Override Manuale rilevato: Passaggio a LOCAL");
+                    pContext->setManualState(LOCAL);
+                }
             }
 
             switch (pContext->getManualState())
@@ -53,13 +52,11 @@ void StateTask::tick(){
                 case LOCAL: {
 
                     int servoAngle = map(currentValue, 1, 1020, 0, 90);
-
                     int perc = map(currentValue, 1, 1020, 0, 100);
 
                     oldValue = currentValue;
 
                     pHw->getMotor()->setPosition(servoAngle);
-
                     pContext->setValve(perc);
 
                     break;
@@ -67,13 +64,11 @@ void StateTask::tick(){
                 
                 case REMOTE: {
 
-                    readCommand();
+                    setMotorAnglePerc();
 
                     break;
 
                 }
-
-                    
             }
 
             break;
@@ -82,10 +77,9 @@ void StateTask::tick(){
         case AUTOMATIC: {
             if(this->checkAndSetJustEntered()) {
                 Logger.log("Dentro AUTOMATIC");
-                lastState = AUTOMATIC;
             }
 
-            readCommand();
+            setMotorAnglePerc();
 
             break;
         }
@@ -96,6 +90,11 @@ void StateTask::tick(){
                 pContext->setValve(100);
             }
 
+            if (pContext->isConnected())
+            {
+                pContext->setWCSState(AUTOMATIC);
+            }
+
             break;
         }
     }
@@ -103,16 +102,14 @@ void StateTask::tick(){
     updateDisplay();
 }
 
-void StateTask::readCommand() {
+void StateTask::setMotorAnglePerc() {
 
     int currentValue = pContext->getValvePerc();
+    int servoAngle = map(currentValue, 0, 100, 0, 90);
 
+    pHw->getMotor()->setPosition(servoAngle);
+    
 
-        int servoAngle = map(currentValue, 0, 100, 0, 90);
-
-        pHw->getMotor()->setPosition(servoAngle);
-
-    pContext->setValve(currentValue);
 }
 
 void StateTask::updateDisplay() {
@@ -129,11 +126,9 @@ void StateTask::updateDisplay() {
     }
 
     String stateStr = "MODE: " + modeText;
-
     pUserPanel->printMessage(0, 0, stateStr);
 
     String valvePerc = String(pContext->getValvePerc()) + "%";
-
     pUserPanel->printMessage(1, 1, valvePerc);
 }
 
@@ -141,7 +136,6 @@ void StateTask::setState(WCSState s){
     state = s;
     stateTimestamp = millis();
     justEntered = true;
-    sensorConditionMet = false;
 }
 
 long StateTask::elapsedTimeInState(){
