@@ -10,11 +10,16 @@ StatusTask::StatusTask(Context* pContext,Led* ledKO, Led* ledOK,Sonar* sonar):
   
 void StatusTask::tick(){
 
+
+
     switch (state){   
         case OK: {
             if (this->checkAndSetJustEntered()){
                 this->ledOK->switchOn();
                 this->ledKO->switchOff();
+            }
+            if(!pContext->isSystemOnline()){
+                setState(ALARM);
             }
 
             float levelWater = this->sonar->getDistance();
@@ -25,11 +30,7 @@ void StatusTask::tick(){
             if(!mqttSending){
                 this->pContext->setMqttError(true);
             }
-
-            if(!pContext->isSystemOnline()){
-                setState(ALARM);
-            }
-
+            
             break;
         }
         case ALARM: {

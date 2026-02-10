@@ -18,12 +18,11 @@ void ConnectionTask::tick() {
         if (checkAndSetJustEntered()) {
             client.disconnect();
             WiFi.disconnect();
+            pContext->setSystemOnline(false);
 
             log("Stato: DISCONNECTED. Avvio WiFi...");
             WiFi.mode(WIFI_STA);
             WiFi.begin(ssid, password);
-            pContext->setSystemOnline(false);
-            pContext->setMqttError(false);
         }
 
         if (WiFi.status() == WL_CONNECTED) {
@@ -72,6 +71,7 @@ void ConnectionTask::tick() {
         if (checkAndSetJustEntered()) {
             log("Stato: CONNECTED (Sistema Online)");
             pContext->setSystemOnline(true);
+            pContext->setMqttError(false);
         }
 
         client.loop();
@@ -81,6 +81,7 @@ void ConnectionTask::tick() {
             setState(DISCONNECTED);
         } else if (!client.connected() || this->pContext->isMqttError()) {
             log("Persa connessione MQTT!");
+            pContext->setMqttError(true);
             setState(DISCONNECTED);
         }
         break;
