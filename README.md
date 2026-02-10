@@ -6,7 +6,7 @@ v1.0.0-20251112
  
 We want to realise an IoT system monitoring the rainwater level of a tank.  The system is composed of 4 subsystems: 
 
-![layout](doc\assignment-03-sketch.png)
+![layout](doc/assignment-03-sketch.png)
 
 ### Description 
 
