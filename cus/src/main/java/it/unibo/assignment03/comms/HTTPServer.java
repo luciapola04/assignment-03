@@ -37,8 +37,8 @@ public class HTTPServer extends AbstractVerticle {
 					.allowedHeader("Content-Type")
 				);
 		router.route().handler(BodyHandler.create());
-		router.get("/api/data").handler(this::handleGetStatus);
-		router.get("/api/data").handler(this::handleGetHistory);	
+		router.get("/api/status").handler(this::handleGetStatus);
+		router.get("/api/history").handler(this::handleGetHistory);	
 		router.post("/api/mode/switch").handler(this::handleSwitchMode);
         router.post("/api/valve/set").handler(this::handleSetValve);
 		vertx
