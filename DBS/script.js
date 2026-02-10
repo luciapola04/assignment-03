@@ -80,7 +80,7 @@ async function fetchStatus() {
 
     } catch (error) {
         console.error("Errore connessione:", error);
-        setUIState("NOT_AVAILABLE");
+        setUIState("NOT AVAILABLE");
     }
 }
 
@@ -96,13 +96,13 @@ async function fetchHistory() {
 
 function updateUI(data) {
     // 1. Aggiorna Badge Stato
-    setUIState(data.state);
+    setUIState(data.mode);
 
     // 2. Aggiorna Numero Valvola
     els.valveVal.innerText = data.valve;
     
     // 3. Gestione Slider (Abilita solo in Manual + Connected)
-    const canControl = (data.mode === "MANUAL" && data.state === "CONNECTED");
+    const canControl = (data.mode === "MANUAL");
     els.slider.disabled = !canControl;
     
     // Aggiorna posizione cursore solo se l'utente non lo sta toccando
@@ -123,7 +123,7 @@ function setUIState(state) {
 
     // Assegna colore Bootstrap in base allo stato
     switch(state) {
-        case 'CONNECTED':
+        case 'MANUAL','AUTOMATIC':
             els.state.classList.add('bg-success'); // Verde
             break;
         case 'UNCONNECTED':

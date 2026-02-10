@@ -44,7 +44,7 @@ void StateTask::tick(){
             }
 
             int currentValue = pHw->getPot()->getValue();
-            if (abs(currentValue - oldValue) > 2) {
+            if (abs(currentValue - oldValue) > 5) {
                 pContext->setManualState(LOCAL);
             }
 
@@ -107,15 +107,12 @@ void StateTask::readCommand() {
 
     int currentValue = pContext->getValvePerc();
 
-    if (currentValue != oldValue) {
 
         int servoAngle = map(currentValue, 0, 100, 0, 90);
 
         pHw->getMotor()->setPosition(servoAngle);
 
-        oldValue = currentValue;
-
-    }
+    pContext->setValve(currentValue);
 }
 
 void StateTask::updateDisplay() {
