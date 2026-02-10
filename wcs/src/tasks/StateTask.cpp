@@ -74,7 +74,7 @@ void StateTask::tick(){
                 }
 
                     
-                }
+            }
 
             break;
         }
@@ -93,6 +93,7 @@ void StateTask::tick(){
         case UNCONNECTED: {
             if(this->checkAndSetJustEntered()) {
                 Logger.log("Dentro UNCONNECTED");
+                pContext->setValve(100);
             }
 
             break;
