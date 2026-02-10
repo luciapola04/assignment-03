@@ -62,6 +62,19 @@ void SerialMonitorTask::checkSerialMonitor(){
         } else {
           Logger.log("Valore apertura valvola invalido o fuori range!");
         }
+      } else if (content.startsWith("r:")) {
+        cleanContent.replace("r:", "");
+        cleanContent.trim();
+        int val = cleanContent.toInt();
+        if (val >= MIN_PERC && val <= MAX_PERC){
+          Logger.log("Received valve opening: " + String(val )+ "%");
+          pContext->setValve(val);
+          pContext->setManualState(REMOTE);
+        }
+        else
+        {
+          Logger.log("Valore apertura valvola invalido o fuori range!");
+        }
       }
 
       delete msg; 

@@ -43,25 +43,26 @@ void StateTask::tick(){
                 oldValue = -1;
             }
 
+            int currentValue = pHw->getPot()->getValue();
+            if (abs(currentValue - oldValue) > 2) {
+                pContext->setManualState(LOCAL);
+            }
+
             switch (pContext->getManualState())
             {
                 case LOCAL: {
 
-                    int currentValue = pHw->getPot()->getValue();
-                    if (abs(currentValue - oldValue) > 2) {
+                    int servoAngle = map(currentValue, 1, 1020, 0, 90);
 
-                        int servoAngle = map(currentValue, 1, 1020, 0, 90);
+                    int perc = map(currentValue, 1, 1020, 0, 100);
 
-                        int perc = map(currentValue, 1, 1020, 0, 100);
+                    oldValue = currentValue;
 
-                        oldValue = currentValue;
+                    pHw->getMotor()->setPosition(servoAngle);
 
-                        pHw->getMotor()->setPosition(servoAngle);
+                    pContext->setValve(perc);
 
-                        pContext->setValve(perc);
-                    }
                     break;
-
                 } 
                 
                 case REMOTE: {
