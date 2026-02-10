@@ -1,11 +1,9 @@
-// Configurazione URL (Se usi CORS con Java metti http://localhost:8080)
+//con CORS uso localhost
 const BASE_URL = "http://localhost:8080"; 
 
-// Variabili di stato
 let currentSystemMode = ""; 
 let isDragging = false; 
 
-// Riferimenti agli elementi DOM (per non cercarli ogni volta)
 const els = {
     state: document.getElementById('state-display'),
     valveVal: document.getElementById('valve-display'),
@@ -14,7 +12,6 @@ const els = {
     btnAuto: document.getElementById('btn-auto')
 };
 
-// --- 1. Inizializzazione Grafico Chart.js ---
 const ctx = document.getElementById('levelChart').getContext('2d');
 const levelChart = new Chart(ctx, {
     type: 'line',
@@ -23,7 +20,7 @@ const levelChart = new Chart(ctx, {
         datasets: [{
             label: 'Livello Acqua (cm)',
             data: [],
-            borderColor: '#0d6efd', // Bootstrap Primary Blue
+            borderColor: '#0d6efd',
             backgroundColor: 'rgba(13, 110, 253, 0.1)',
             borderWidth: 2,
             pointRadius: 3,
@@ -33,40 +30,37 @@ const levelChart = new Chart(ctx, {
     },
     options: {
         responsive: true,
-        maintainAspectRatio: false, // Si adatta al contenitore Bootstrap
+        maintainAspectRatio: false,
         scales: {
             y: {
                 beginAtZero: true,
-                grid: { color: '#e9ecef' } // Grigio chiaro Bootstrap
+                grid: { color: '#e9ecef' }
             },
             x: {
                 grid: { display: false }
             }
         },
         plugins: {
-            legend: { display: false } // Nascondiamo la legenda per pulizia
+            legend: { display: false }
         },
         animation: false
     }
 });
 
-// --- 2. Gestione Eventi Slider ---
-
-// Quando l'utente trascina lo slider (aggiorna solo il numero a video)
+//slider number
 els.slider.addEventListener('input', (e) => {
     isDragging = true;
     els.valveVal.innerText = e.target.value;
 });
 
-// Quando l'utente RILASCIA lo slider (manda il comando al server)
 els.slider.addEventListener('change', async (e) => {
     isDragging = false;
     await sendValveValue(e.target.value);
 });
 
 
-// --- 3. Logica di Aggiornamento ---
 
+//fetch ai json del cus
 async function fetchStatus() {
     try {
         const response = await fetch(`${BASE_URL}/api/status`);
@@ -75,7 +69,6 @@ async function fetchStatus() {
         const data = await response.json();
         updateUI(data);
         
-        // Recupera storico per il grafico
         fetchHistory();
 
     } catch (error) {
@@ -91,53 +84,44 @@ async function fetchHistory() {
             const historyData = await response.json();
             updateChart(historyData);
         }
-    } catch (e) { /* ignore */ }
+    } catch (e) { console.log(e);}
 }
 
 function updateUI(data) {
-    // 1. Aggiorna Badge Stato
-    setUIState(data.mode);
 
-    // 2. Aggiorna Numero Valvola
+    setUIState(data.mode);
     els.valveVal.innerText = data.valve;
     
-    // 3. Gestione Slider (Abilita solo in Manual + Connected)
     const canControl = (data.mode === "MANUAL");
     els.slider.disabled = !canControl;
     
-    // Aggiorna posizione cursore solo se l'utente non lo sta toccando
     if (!isDragging) {
         els.slider.value = data.valve;
     }
 
-    // 4. Aggiorna Bottoni (Visualizza quale è attivo)
     currentSystemMode = data.mode;
     updateButtons(data.mode);
 }
 
 function setUIState(state) {
     els.state.innerText = state;
-    
-    // Rimuovi vecchie classi colore
     els.state.classList.remove('bg-secondary', 'bg-success', 'bg-danger', 'bg-warning');
 
-    // Assegna colore Bootstrap in base allo stato
     switch(state) {
         case 'MANUAL','AUTOMATIC':
-            els.state.classList.add('bg-success'); // Verde
+            els.state.classList.add('bg-success');
             break;
         case 'UNCONNECTED':
-            els.state.classList.add('bg-danger');  // Rosso
+            els.state.classList.add('bg-danger');
             break;
         case 'NOT_AVAILABLE':
         default:
-            els.state.classList.add('bg-secondary'); // Grigio
+            els.state.classList.add('bg-secondary');
             break;
     }
 }
 
 function updateButtons(mode) {
-    // Gestione visuale dei bottoni (Outline vs Solid)
     if (mode === "MANUAL") {
         els.btnManual.classList.add('btn-primary');
         els.btnManual.classList.remove('btn-outline-primary');
@@ -154,7 +138,6 @@ function updateButtons(mode) {
 }
 
 function updateChart(history) {
-    // Aggiorna i dati del grafico
     const labels = history.map(d => new Date(d.time).toLocaleTimeString());
     const values = history.map(d => d.value);
 
@@ -163,7 +146,8 @@ function updateChart(history) {
     levelChart.update();
 }
 
-// --- 4. Chiamate API (Comandi Utente) ---
+
+//invio dati al cus
 
 async function sendValveValue(val) {
     try {
@@ -178,17 +162,16 @@ async function sendValveValue(val) {
 }
 
 async function setMode(targetMode) {
-    // Evita chiamate inutili se siamo già in quella modalità
     if (currentSystemMode === targetMode) return;
 
     try {
         await fetch(`${BASE_URL}/api/mode/switch`, { method: 'POST' });
-        fetchStatus(); // Aggiorna subito
+        fetchStatus();
     } catch (e) {
         console.error("Errore cambio modalità", e);
     }
 }
 
-// Avvio Loop
+//loop interno
 setInterval(fetchStatus, 1000);
 fetchStatus();
