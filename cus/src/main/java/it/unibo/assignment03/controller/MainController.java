@@ -4,7 +4,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpServer;
 import it.unibo.assignment03.comms.CommChannel;
 import it.unibo.assignment03.comms.HTTPServer;
 import it.unibo.assignment03.comms.TMSComm;

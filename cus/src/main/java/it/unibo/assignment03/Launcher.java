@@ -1,9 +1,6 @@
 package it.unibo.assignment03;
 
-import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpServer;
 import it.unibo.assignment03.comms.CommChannel;
-import it.unibo.assignment03.comms.HTTPServer;
 import it.unibo.assignment03.comms.SerialCommChannel;
 import it.unibo.assignment03.comms.TMSComm;
 import it.unibo.assignment03.controller.MainController;
@@ -20,7 +17,6 @@ public class Launcher {
         double L2 = 0.20;
         String portName;
         CommChannel serialChannel;
-        HttpServer server;
 
         if (args.length > 0) {
             portName = args[0];
