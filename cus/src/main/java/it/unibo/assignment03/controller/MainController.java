@@ -1,31 +1,23 @@
 package it.unibo.assignment03.controller;
 
-import java.util.LinkedList;
-import java.util.List;
-
 import io.vertx.core.Vertx;
 import it.unibo.assignment03.comms.CommChannel;
 import it.unibo.assignment03.comms.HTTPServer;
 import it.unibo.assignment03.comms.TMSComm;
-import it.unibo.assignment03.model.DataPoint;
+import it.unibo.assignment03.model.TankState;
 
 public class MainController {
 
     private TMSComm tmsModule;
     private CommChannel serialMonitor;
     private HTTPServer httpServer;
+    private TankState tankState;
 
     private boolean running;
 
-    private volatile SystemState currentState;
-    private volatile SystemMode currentMode;
-
     private final double L1, L2;
     private final long T1;
-
-    private volatile double currentDistance = 0;
     private long startL1Time = 0;
-    private volatile int currentValveOpening = 0;
 
     static final String MSG_PREFIX = "st:";
     static final String VALV_STATE = "vo:";
@@ -33,30 +25,20 @@ public class MainController {
     static final Integer HALF_OPEN = 50;
     static final Integer OPEN = 100;
 
-    private LinkedList<DataPoint> history = new LinkedList<>(); 
-    private final int MAX_HISTORY = 20;
-
-    public enum SystemState {
-        CONNECTED, UNCONNECTED
-    }
-
-    public enum SystemMode {
-        AUTOMATIC, MANUAL
-    }
-
-    public MainController(CommChannel serialMonitor, TMSComm mqttChannel, long T1, double L1, double L2) {
+    public MainController(CommChannel serialMonitor, TMSComm mqttChannel,TankState tank, long T1, double L1, double L2) {
         this.tmsModule = mqttChannel;
         this.serialMonitor = serialMonitor;
-        Vertx vertx = Vertx.vertx();
-        this.httpServer = new HTTPServer(8080, this);
-        vertx.deployVerticle(httpServer);
+        this.tankState = tank;
         this.T1 = T1;
         this.L1 = L1;
         this.L2 = L2;
 
+        
+        Vertx vertx = Vertx.vertx();
+        this.httpServer = new HTTPServer(8080, this,tankState);
+        vertx.deployVerticle(httpServer);
+
         this.running = true;
-        this.currentState = SystemState.UNCONNECTED;
-        this.currentMode = SystemMode.AUTOMATIC;
         serialMonitor.sendMsg("m:1");
     }
 
@@ -85,6 +67,8 @@ public class MainController {
                 }
             }
 
+            TankState.State currentState = tankState.getState();
+
             switch (currentState) {
 
                 case CONNECTED:
@@ -97,7 +81,7 @@ public class MainController {
                     if (tmsModule.isTimeout()) {
                         
                         System.err.println("[ALLARME] Timeout MQTT! Passo a UNCONNECTED");
-                        currentState = SystemState.UNCONNECTED;
+                        tankState.setState(TankState.State.UNCONNECTED);
                         serialMonitor.sendMsg("m:1");
                         setValve(OPEN);
 
@@ -114,7 +98,7 @@ public class MainController {
                     if (mqttMsg != null) {
                         System.out.println("[INFO] Connessione ripristinata.");
                         processMqttMessage(mqttMsg);
-                        currentState = SystemState.CONNECTED;
+                        tankState.setState(TankState.State.CONNECTED);
                         serialMonitor.sendMsg("m:2");
                     }
                     break;
@@ -131,11 +115,12 @@ public class MainController {
 
     private void runOperatingLogic(long now) {
 
-        switch(currentMode){
+        switch(tankState.getMode()){
 
             case AUTOMATIC:
 
                 int targetValve = 0;
+                double currentDistance = tankState.getLevel();
 
                 if (currentDistance < L1) {
                     targetValve = CLOSED;
@@ -152,7 +137,7 @@ public class MainController {
                     startL1Time = 0;
                 }
 
-                if (targetValve != currentValveOpening) {
+                if (targetValve != tankState.getValveOpening()) {
                     setValve(targetValve);
                 }
 
@@ -170,15 +155,9 @@ public class MainController {
             try {
                 String val = msg.split(":")[1];
                 double value = Double.parseDouble(val);
-                this.currentDistance = value;
                 System.out.println("Distanza:"+ val);
 
-                synchronized (history) {
-                    history.addFirst(new DataPoint(value, System.currentTimeMillis()));
-                    if (history.size() > MAX_HISTORY) {
-                        history.removeLast();
-                    }
-                }
+                tankState.updateLevel(value);
             } catch (Exception e) {
                 System.err.println("Errore parsing MQTT: " + msg);
             }
@@ -201,12 +180,12 @@ public class MainController {
                         String valveOpening = elems[1].trim();
 
                         if(WCSState.equalsIgnoreCase("MANUAL")){
-                            currentMode = SystemMode.MANUAL;
+                            tankState.setMode(TankState.Mode.MANUAL);
                         }
                         if(WCSState.equalsIgnoreCase("AUTOMATIC")){
-                            currentMode = SystemMode.AUTOMATIC;
+                            tankState.setMode(TankState.Mode.AUTOMATIC);
                         }
-                        this.currentValveOpening = Integer.parseInt(valveOpening);
+                        tankState.setValveOpening(Integer.parseInt(valveOpening));
 
                     }
                 } catch (Exception ex) {
@@ -217,21 +196,17 @@ public class MainController {
         }
     }
 
-    // --- HELPER ---
 
-    public synchronized void switchMode() {
-        if (currentMode == SystemMode.AUTOMATIC) {
-            currentMode = SystemMode.MANUAL;
+    public void switchMode() {
+        if (tankState.getMode() == TankState.Mode.AUTOMATIC) {
             serialMonitor.sendMsg("m:3"); // Manual mode command
         } else {
-            currentMode = SystemMode.AUTOMATIC;
             serialMonitor.sendMsg("m:2"); // Auto mode command
         }
     }
 
-    public synchronized void setValveManual(int percentage) {
-        if (currentMode == SystemMode.MANUAL) {
-            this.currentValveOpening = percentage;
+    public void setValveManual(int percentage) {
+        if (tankState.getMode() == TankState.Mode.MANUAL) {
             serialMonitor.sendMsg("r:" + percentage);
         } else {
             System.out.println("[WARNING] Tentativo cambio valvola in AUTOMATIC ignorato.");
@@ -239,27 +214,9 @@ public class MainController {
     }
 
     private void setValve(int percentage) {
-        this.currentValveOpening = percentage;
         serialMonitor.sendMsg("v:" + percentage);
+        
 
-    }
-
-    public double getCurrentDistance() { return currentDistance; }
-    public int getCurrentValve() { return currentValveOpening; }
-    public String getMode() { 
-
-        if(currentState == SystemState.CONNECTED){
-            return currentMode.toString();
-        }else{
-            return currentState.toString();
-        }
-    
-    }
-
-    public List<DataPoint> getHistory() {
-        synchronized (history) {
-            return new LinkedList<>(history);
-        }
     }
 
     public void stop() { this.running = false; }

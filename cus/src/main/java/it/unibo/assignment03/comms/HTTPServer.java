@@ -11,6 +11,7 @@ import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
 import it.unibo.assignment03.controller.MainController;
 import it.unibo.assignment03.model.DataPoint;
+import it.unibo.assignment03.model.TankState;
 
 /*
  * Data Service as a vertx event-loop 
@@ -19,10 +20,12 @@ public class HTTPServer extends AbstractVerticle {
 
 	private int port;
 	private MainController controller;
+    private TankState tank;
 	
-	public HTTPServer(int port, MainController controller) {
+	public HTTPServer(int port, MainController controller,TankState tank) {
 		this.controller = controller;	
 		this.port = port;
+        this.tank = tank;
 	}
 
 	@Override
@@ -51,9 +54,9 @@ public class HTTPServer extends AbstractVerticle {
 	
 	private void handleGetStatus(RoutingContext ctx) {
         JsonObject status = new JsonObject();
-        status.put("level", controller.getCurrentDistance());
-        status.put("valve", controller.getCurrentValve());
-        status.put("mode", controller.getMode());
+        status.put("level", tank.getLevel());
+        status.put("valve", tank.getValveOpening());
+        status.put("mode", tank.getMode());
         
         ctx.response()
             .putHeader("content-type", "application/json")
@@ -62,7 +65,7 @@ public class HTTPServer extends AbstractVerticle {
     
     private void handleGetHistory(RoutingContext ctx) {
         JsonArray arr = new JsonArray();
-        for (DataPoint p: controller.getHistory()) {
+        for (DataPoint p: tank.getHistory()) {
             JsonObject data = new JsonObject();
             data.put("time", p.getTimestamp());
             data.put("value", p.getValue());

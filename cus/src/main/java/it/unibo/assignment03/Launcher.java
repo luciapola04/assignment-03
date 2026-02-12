@@ -4,6 +4,7 @@ import it.unibo.assignment03.comms.CommChannel;
 import it.unibo.assignment03.comms.SerialCommChannel;
 import it.unibo.assignment03.comms.TMSComm;
 import it.unibo.assignment03.controller.MainController;
+import it.unibo.assignment03.model.TankState;
 import jssc.SerialPortList;
 
 public class Launcher {
@@ -34,8 +35,9 @@ public class Launcher {
         try{
             serialChannel = new SerialCommChannel(portName,115200);
             TMSComm mqttChannel = new TMSComm(broker, topic, T2);
-
-            MainController controller = new MainController(serialChannel,mqttChannel,T1,L1,L2);
+            TankState tank = new TankState();
+            MainController controller = new MainController(serialChannel,mqttChannel,tank,T1,L1,L2);
+            
             controller.start();
             
         }catch(Exception ex){
