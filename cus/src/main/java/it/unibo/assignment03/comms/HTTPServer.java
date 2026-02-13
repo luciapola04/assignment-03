@@ -56,7 +56,7 @@ public class HTTPServer extends AbstractVerticle {
         JsonObject status = new JsonObject();
         status.put("level", tank.getLevel());
         status.put("valve", tank.getValveOpening());
-        status.put("mode", tank.getMode());
+        status.put("mode", tank.getState() == TankState.State.UNCONNECTED ? "UNCONNECTED" : tank.getMode());
         
         ctx.response()
             .putHeader("content-type", "application/json")

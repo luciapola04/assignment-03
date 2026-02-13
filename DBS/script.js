@@ -123,18 +123,23 @@ function setUIState(state) {
 }
 
 function updateButtons(mode) {
+    els.btnManual.classList.remove('disabled');
+    els.btnAuto.classList.remove('disabled');
+
     if (mode === "MANUAL") {
-        els.btnManual.classList.add('btn-primary');
-        els.btnManual.classList.remove('btn-outline-primary');
-        
-        els.btnAuto.classList.add('btn-outline-primary');
-        els.btnAuto.classList.remove('btn-primary');
+        els.btnManual.classList.replace('btn-outline-primary', 'btn-primary');
+        els.btnAuto.classList.replace('btn-primary', 'btn-outline-primary');
+
+    } else if (mode === "AUTOMATIC") {
+        els.btnAuto.classList.replace('btn-outline-primary', 'btn-primary');
+        els.btnManual.classList.replace('btn-primary', 'btn-outline-primary');
+
     } else {
-        els.btnAuto.classList.add('btn-primary');
-        els.btnAuto.classList.remove('btn-outline-primary');
+        els.btnAuto.classList.add("disabled");
+        els.btnManual.classList.add("disabled");
         
-        els.btnManual.classList.add('btn-outline-primary');
-        els.btnManual.classList.remove('btn-primary');
+        els.btnManual.classList.replace('btn-primary', 'btn-outline-primary');
+        els.btnAuto.classList.replace('btn-primary', 'btn-outline-primary');
     }
 }
 
