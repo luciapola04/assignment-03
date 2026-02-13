@@ -6,25 +6,30 @@
 StateTask::StateTask(HWPlatform* pHW, Context* pContext, UserPanel* pUserPanel): 
     pHw(pHW), pContext(pContext), pUserPanel(pUserPanel) {
     precPressed = false;
-    
+    setState(UNCONNECTED);
     pHw->getMotor()->on();
 }
   
 void StateTask::tick(){
 
-    state = pContext->getWCSState();
+    WCSState globalState = pContext->getWCSState();
+
+    if (globalState != state) {
+        state = globalState;
+        setState(state);  
+    }
 
     if (!pContext->isConnected() && state != UNCONNECTED) {
-        pContext->setWCSState(UNCONNECTED);
+        setState(UNCONNECTED);
     }
 
     bool isPressed = pHw->getButton()->isPressed();
     if (isPressed && !precPressed) {
         if (pContext->isConnected()) {
             if (state == MANUAL) {
-                pContext->setWCSState(AUTOMATIC);
+                setState(AUTOMATIC);
             } else {
-                pContext->setWCSState(MANUAL);
+                setState(MANUAL);
             }
         }
     }
@@ -40,11 +45,12 @@ void StateTask::tick(){
             }
 
             int currentValue = pHw->getPot()->getValue();
-            if (abs(currentValue - oldValue) > 10) {
+            if (abs(currentValue - oldValue) > 15) {
                 if (pContext->getManualState() == REMOTE) {
                     Logger.log("Override Manuale rilevato: Passaggio a LOCAL");
                     pContext->setManualState(LOCAL);
                 }
+                oldValue = currentValue;
             }
 
             switch (pContext->getManualState())
@@ -92,21 +98,24 @@ void StateTask::tick(){
 
             if (pContext->isConnected())
             {
-                pContext->setWCSState(AUTOMATIC);
+                setState(AUTOMATIC);
+                pContext->setValve(0);
             }
 
             break;
         }
+
     }
 
     updateDisplay();
+
+    
 }
 
 void StateTask::setMotorAnglePerc() {
 
     int currentValue = pContext->getValvePerc();
     int servoAngle = map(currentValue, 0, 100, 0, 90);
-
     pHw->getMotor()->setPosition(servoAngle);
     
 
@@ -133,6 +142,7 @@ void StateTask::updateDisplay() {
 }
 
 void StateTask::setState(WCSState s){
+    pContext->setWCSState(s);
     state = s;
     stateTimestamp = millis();
     justEntered = true;

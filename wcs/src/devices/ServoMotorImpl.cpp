@@ -10,7 +10,7 @@ ServoMotorImpl::ServoMotorImpl(int pin){
 void ServoMotorImpl::on(){
   // updated values: min is 544, max 2400 (see ServoTimer2 doc)
   motor.attach(pin); //, 544, 2400); 
-  this->setPosition(MOTOR_CLOSE_POS);   
+  this->setPosition(90);   
   _on = true;
   delay(50); //per permettere al servo di stabilizzarsi
 }

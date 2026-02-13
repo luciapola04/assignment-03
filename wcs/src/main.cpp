@@ -30,7 +30,7 @@ void setup() {
   userPanel->init();
 
   Task* serialTask = new SerialMonitorTask(context);
-  serialTask->init(150);
+  serialTask->init(200);
 
   Task* stateTask = new StateTask(hw, context, userPanel);
   stateTask->init(150);

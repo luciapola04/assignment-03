@@ -108,7 +108,8 @@ function setUIState(state) {
     els.state.classList.remove('bg-secondary', 'bg-success', 'bg-danger', 'bg-warning');
 
     switch(state) {
-        case 'MANUAL','AUTOMATIC':
+        case 'MANUAL':
+        case 'AUTOMATIC':
             els.state.classList.add('bg-success');
             break;
         case 'UNCONNECTED':

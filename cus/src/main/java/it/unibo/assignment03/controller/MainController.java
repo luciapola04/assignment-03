@@ -17,7 +17,9 @@ public class MainController {
 
     private final double L1, L2;
     private final long T1;
+
     private long startL1Time = 0;
+    private int lastSentValve = -1; 
 
     static final String MSG_PREFIX = "st:";
     static final String VALV_STATE = "vo:";
@@ -25,7 +27,7 @@ public class MainController {
     static final Integer HALF_OPEN = 50;
     static final Integer OPEN = 100;
 
-    public MainController(CommChannel serialMonitor, TMSComm mqttChannel,TankState tank, long T1, double L1, double L2) {
+    public MainController(CommChannel serialMonitor, TMSComm mqttChannel, TankState tank, long T1, double L1, double L2) {
         this.tmsModule = mqttChannel;
         this.serialMonitor = serialMonitor;
         this.tankState = tank;
@@ -33,12 +35,12 @@ public class MainController {
         this.L1 = L1;
         this.L2 = L2;
 
-        
         Vertx vertx = Vertx.vertx();
-        this.httpServer = new HTTPServer(8080, this,tankState);
+        this.httpServer = new HTTPServer(8080, this, tankState);
         vertx.deployVerticle(httpServer);
 
         this.running = true;
+        
         serialMonitor.sendMsg("m:1");
     }
 
@@ -61,7 +63,7 @@ public class MainController {
             if (serialMonitor.isMsgAvailable()) {
                 try {
                     serialMsg = serialMonitor.receiveMsg();
-                    System.out.println(serialMsg);
+                    System.out.println("[ARDUINO] " + serialMsg);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -72,34 +74,35 @@ public class MainController {
             switch (currentState) {
 
                 case CONNECTED:
-
-                    if (mqttMsg != null)
-                        processMqttMessage(mqttMsg);
-                    if (serialMsg != null)
-                        processSerialMessage(serialMsg);
+                    if (mqttMsg != null) processMqttMessage(mqttMsg);
+                    if (serialMsg != null) processSerialMessage(serialMsg);
 
                     if (tmsModule.isTimeout()) {
-                        
                         System.err.println("[ALLARME] Timeout MQTT! Passo a UNCONNECTED");
+                        
                         tankState.setState(TankState.State.UNCONNECTED);
-                        serialMonitor.sendMsg("m:1");
+                        serialMonitor.sendMsg("m:1"); 
+                        
+                        startL1Time = 0;
+                        lastSentValve = -1; 
+                        
                         setValve(OPEN);
 
-                    }else {
-            
+                    } else {
                         runOperatingLogic(now);
-
                     }
                     break;
 
                 case UNCONNECTED:
-
-                    //quando mi riconnetto
                     if (mqttMsg != null) {
-                        System.out.println("[INFO] Connessione ripristinata.");
+                        System.out.println("[INFO] Connessione MQTT ripristinata.");
                         processMqttMessage(mqttMsg);
+                        
                         tankState.setState(TankState.State.CONNECTED);
                         serialMonitor.sendMsg("m:2");
+
+                        startL1Time = 0;
+                        lastSentValve = -1; 
                     }
                     break;
             }
@@ -107,6 +110,7 @@ public class MainController {
             try {
                 Thread.sleep(50);
             } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
 
@@ -118,7 +122,6 @@ public class MainController {
         switch(tankState.getMode()){
 
             case AUTOMATIC:
-
                 int targetValve = 0;
                 double currentDistance = tankState.getLevel();
 
@@ -137,16 +140,18 @@ public class MainController {
                     startL1Time = 0;
                 }
 
-                if (targetValve != tankState.getValveOpening()) {
+                if (targetValve != lastSentValve) {
                     setValve(targetValve);
+                    lastSentValve = targetValve;
                 }
-
-            break;
+                break;
 
             case MANUAL:
-
-            break;
-
+                if (lastSentValve != -1) {
+                    lastSentValve = -1;
+                    startL1Time = 0;
+                }
+                break;
         } 
     }
 
@@ -154,9 +159,7 @@ public class MainController {
         if (msg.contains("Distance")) {
             try {
                 String val = msg.split(":")[1];
-                double value = Double.parseDouble(val);
-                System.out.println("Distanza:"+ val);
-
+                double value = Double.parseDouble(val.trim());
                 tankState.updateLevel(value);
             } catch (Exception e) {
                 System.err.println("Errore parsing MQTT: " + msg);
@@ -165,32 +168,37 @@ public class MainController {
     }
 
     private void processSerialMessage(String msg) {
-
         if (msg.startsWith(MSG_PREFIX)) {
-            String cmd = msg.substring(MSG_PREFIX.length());
+            String cmd = msg.substring(MSG_PREFIX.length()); 
             if (cmd.startsWith(VALV_STATE)) {
                 try {
-                    String args = cmd.substring(VALV_STATE.length());
-                    // "st:vo"
-                    // ex: "MANUAL:50"
+                    String args = cmd.substring(VALV_STATE.length()); 
                     String[] elems = args.split(":");
 
                     if (elems.length >= 2) {
-                        String WCSState = elems[0].trim();
-                        String valveOpening = elems[1].trim();
+                        String wcsStateStr = elems[0].trim();
+                        String valveOpeningStr = elems[1].trim();
 
-                        if(WCSState.equalsIgnoreCase("MANUAL")){
-                            tankState.setMode(TankState.Mode.MANUAL);
+                        if(wcsStateStr.equalsIgnoreCase("MANUAL")){
+                            if (tankState.getMode() != TankState.Mode.MANUAL) {
+                                tankState.setMode(TankState.Mode.MANUAL);
+                                startL1Time = 0;
+                                lastSentValve = -1;
+                            }
                         }
-                        if(WCSState.equalsIgnoreCase("AUTOMATIC")){
-                            tankState.setMode(TankState.Mode.AUTOMATIC);
+                        else if(wcsStateStr.equalsIgnoreCase("AUTOMATIC")){
+                            if (tankState.getMode() != TankState.Mode.AUTOMATIC) {
+                                tankState.setMode(TankState.Mode.AUTOMATIC);
+                                startL1Time = 0;
+                                lastSentValve = -1;
+                            }
                         }
-                        tankState.setValveOpening(Integer.parseInt(valveOpening));
 
+                        tankState.setValveOpening(Integer.parseInt(valveOpeningStr));
                     }
                 } catch (Exception ex) {
-                    ex.printStackTrace();
                     System.err.println("Error parsing msg: " + cmd);
+                    ex.printStackTrace();
                 }
             }
         }
@@ -199,9 +207,9 @@ public class MainController {
 
     public void switchMode() {
         if (tankState.getMode() == TankState.Mode.AUTOMATIC) {
-            serialMonitor.sendMsg("m:3"); // Manual mode command
+            serialMonitor.sendMsg("m:3"); //manual
         } else {
-            serialMonitor.sendMsg("m:2"); // Auto mode command
+            serialMonitor.sendMsg("m:2"); //auto
         }
     }
 
@@ -209,15 +217,15 @@ public class MainController {
         if (tankState.getMode() == TankState.Mode.MANUAL) {
             serialMonitor.sendMsg("r:" + percentage);
         } else {
-            System.out.println("[WARNING] Tentativo cambio valvola in AUTOMATIC ignorato.");
+            System.out.println("[WARNING] Ignorato comando manuale mentre in AUTOMATIC.");
         }
     }
 
     private void setValve(int percentage) {
         serialMonitor.sendMsg("v:" + percentage);
-        
-
     }
 
-    public void stop() { this.running = false; }
+    public void stop() { 
+        this.running = false; 
+    }
 }

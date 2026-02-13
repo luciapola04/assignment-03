@@ -54,6 +54,7 @@ void SerialMonitorTask::checkSerialMonitor(){
         }
       } else if (content.startsWith("v:")) {
         cleanContent.replace("v:", "");
+        cleanContent.trim();
         int val = cleanContent.toInt();
         if (pContext->getWCSState() == AUTOMATIC) {
             if (val >= 0 && val <= 100){
