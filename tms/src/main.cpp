@@ -26,7 +26,7 @@ void setup() {
   context->init();
 
   Task* statusTask = new StatusTask(context,hw->getLedALARM(),hw->getLedOK(),hw->getSonar());
-  statusTask->init(400);
+  statusTask->init(250);
 
   Task* connectionTask = new ConnectionTask(context);
   connectionTask->init(100);
