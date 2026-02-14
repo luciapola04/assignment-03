@@ -1,6 +1,8 @@
 package it.unibo.assignment03;
 
+import io.vertx.core.Vertx;
 import it.unibo.assignment03.comms.CommChannel;
+import it.unibo.assignment03.comms.HTTPServer;
 import it.unibo.assignment03.comms.SerialCommChannel;
 import it.unibo.assignment03.comms.TMSComm;
 import it.unibo.assignment03.controller.MainController;
@@ -18,6 +20,7 @@ public class Launcher {
         double L2 = 0.20;
         String portName;
         CommChannel serialChannel;
+        HTTPServer httpServer;
 
         if (args.length > 0) {
             portName = args[0];
@@ -33,11 +36,16 @@ public class Launcher {
         }
 
         try{
+
             serialChannel = new SerialCommChannel(portName,115200);
             TMSComm mqttChannel = new TMSComm(broker, topic, T2);
             TankState tank = new TankState();
             MainController controller = new MainController(serialChannel,mqttChannel,tank,T1,L1,L2);
+            Vertx vertx = Vertx.vertx();
+            httpServer = new HTTPServer(8080, controller, tank);
+            vertx.deployVerticle(httpServer);
             
+            httpServer.start();
             controller.start();
             
         }catch(Exception ex){

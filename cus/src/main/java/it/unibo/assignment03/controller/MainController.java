@@ -1,8 +1,6 @@
 package it.unibo.assignment03.controller;
 
-import io.vertx.core.Vertx;
 import it.unibo.assignment03.comms.CommChannel;
-import it.unibo.assignment03.comms.HTTPServer;
 import it.unibo.assignment03.comms.TMSComm;
 import it.unibo.assignment03.model.TankState;
 
@@ -10,7 +8,6 @@ public class MainController {
 
     private TMSComm tmsModule;
     private CommChannel serialMonitor;
-    private HTTPServer httpServer;
     private TankState tankState;
 
     private boolean running;
@@ -35,18 +32,12 @@ public class MainController {
         this.L1 = L1;
         this.L2 = L2;
 
-        Vertx vertx = Vertx.vertx();
-        this.httpServer = new HTTPServer(8080, this, tankState);
-        vertx.deployVerticle(httpServer);
-
         this.running = true;
-        
         serialMonitor.sendMsg("m:1");
     }
 
     public void start() {
         System.out.println("[CONTROLLER] Avvio del sistema...");
-        httpServer.start();
         tmsModule.start();
         this.runLoop();
     }
