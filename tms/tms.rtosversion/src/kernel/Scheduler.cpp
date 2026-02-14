@@ -12,11 +12,9 @@ void Scheduler::taskEntry(void* pvParameters) {
     Task* task = runner->task;
     
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t xFrequency =runner->period;
-
+    const TickType_t xFrequency = pdMS_TO_TICKS(runner->period);
     for ( ; ; ) {
         task->tick();
-        xLastWakeTime = xTaskGetTickCount();
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
 }

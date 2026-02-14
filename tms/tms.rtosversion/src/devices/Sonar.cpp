@@ -2,12 +2,10 @@
 
 #include "Arduino.h"
 
-portMUX_TYPE sonarMux = portMUX_INITIALIZER_UNLOCKED;
-
 Sonar::Sonar(int echoP, int trigP, long maxTime) : echoPin(echoP), trigPin(trigP), timeOut(maxTime){
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);  
-  temperature = 20;
+  temperature = 20; // default value
 }
 
 void Sonar::setTemperature(float temp){
@@ -19,17 +17,12 @@ float Sonar::getSoundSpeed(){
 
 float Sonar::getDistance(){
     digitalWrite(trigPin,LOW);
-    delayMicroseconds(2);
+    delayMicroseconds(3);
     digitalWrite(trigPin,HIGH);
-    delayMicroseconds(10);
+    delayMicroseconds(5);
     digitalWrite(trigPin,LOW);
     
-    portENTER_CRITICAL(&sonarMux);
-    
-    long tUS = pulseIn(echoPin, HIGH, timeOut);
-    
-    portEXIT_CRITICAL(&sonarMux);
-
+    float tUS = pulseIn(echoPin, HIGH, timeOut);
     if (tUS == 0) {
         return NO_OBJ_DETECTED;
     } else {
