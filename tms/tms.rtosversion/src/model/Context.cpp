@@ -15,7 +15,7 @@ bool Context::isSystemOnline(){
 }
 
 void Context::setSystemOnline(bool status){
-    safeSet(this->online,status)
+    safeSet(this->online,status);
 }
 
 void Context::setMQTTClient(PubSubClient* client){
