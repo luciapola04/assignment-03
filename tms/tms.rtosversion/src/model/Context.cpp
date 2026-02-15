@@ -7,25 +7,26 @@ Context::Context(){
 void Context::init(){
    this->online = false;
    this->mqttError = false;
+   this->mutex = xSemaphoreCreateMutex();
 }
 
 bool Context::isSystemOnline(){
-    return this->online;
+    return safeGet(this->online);
 }
 
 void Context::setSystemOnline(bool status){
-    this->online=status;
+    safeSet(this->online,status)
 }
 
 void Context::setMQTTClient(PubSubClient* client){
-    this->mqttClient=client;
+    safeSet(this->mqttClient,client);
 }
 
 PubSubClient* Context::getMQTTClient(){
-    return this->mqttClient;
+    return safeGet(this->mqttClient);
 }
 
-bool Context::isMqttError(){return this->mqttError;}
-void Context::setMqttError(bool status){this->mqttError = status;}
+bool Context::isMqttError(){return safeGet(this->mqttError);}
+void Context::setMqttError(bool status){safeSet(this->mqttError,status);}
 
 

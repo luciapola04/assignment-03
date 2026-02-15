@@ -12,8 +12,6 @@ public class MainController {
 
     private boolean running;
 
-    private final double L1, L2;
-    private final long T1;
 
     private long startL1Time = 0;
     private int lastSentValve = -1; 
@@ -23,14 +21,14 @@ public class MainController {
     static final Integer CLOSED = 0;
     static final Integer HALF_OPEN = 50;
     static final Integer OPEN = 100;
+    static final double L1  = 0.10;
+    static final double L2 = 0.20;
+    static final long T1 = 6000;
 
-    public MainController(CommChannel serialMonitor, TMSComm mqttChannel, TankState tank, long T1, double L1, double L2) {
+    public MainController(CommChannel serialMonitor, TMSComm mqttChannel, TankState tank) {
         this.tmsModule = mqttChannel;
         this.serialMonitor = serialMonitor;
         this.tankState = tank;
-        this.T1 = T1;
-        this.L1 = L1;
-        this.L2 = L2;
 
         this.running = true;
         serialMonitor.sendMsg("m:1");
@@ -76,8 +74,6 @@ public class MainController {
                         
                         startL1Time = 0;
                         lastSentValve = -1; 
-                        
-                        setValve(OPEN);
 
                     } else {
                         runOperatingLogic(now);
@@ -198,9 +194,9 @@ public class MainController {
 
     public void switchMode() {
         if (tankState.getMode() == TankState.Mode.AUTOMATIC) {
-            serialMonitor.sendMsg("m:3"); //manual
+            serialMonitor.sendMsg("m:3");
         } else {
-            serialMonitor.sendMsg("m:2"); //auto
+            serialMonitor.sendMsg("m:2");
         }
     }
 

@@ -14,10 +14,7 @@ public class Launcher {
         
         String broker = "tcp://broker.mqtt-dashboard.com:1883";
         String topic = "esiot-2025";
-        long T1 = 6000;
         long T2 = 5000;
-        double L1 = 0.10;
-        double L2 = 0.20;
         String portName;
         CommChannel serialChannel;
         HTTPServer httpServer;
@@ -40,7 +37,7 @@ public class Launcher {
             serialChannel = new SerialCommChannel(portName,115200);
             TMSComm mqttChannel = new TMSComm(broker, topic, T2);
             TankState tank = new TankState();
-            MainController controller = new MainController(serialChannel,mqttChannel,tank,T1,L1,L2);
+            MainController controller = new MainController(serialChannel,mqttChannel,tank);
             Vertx vertx = Vertx.vertx();
             httpServer = new HTTPServer(8080, controller, tank);
             vertx.deployVerticle(httpServer);

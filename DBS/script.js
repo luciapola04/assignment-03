@@ -47,7 +47,6 @@ const levelChart = new Chart(ctx, {
     }
 });
 
-//slider number
 els.slider.addEventListener('input', (e) => {
     isDragging = true;
     els.valveVal.innerText = e.target.value;
@@ -58,9 +57,6 @@ els.slider.addEventListener('change', async (e) => {
     await sendValveValue(e.target.value);
 });
 
-
-
-//fetch ai json del cus
 async function fetchStatus() {
     try {
         const response = await fetch(`${BASE_URL}/api/status`);
@@ -153,8 +149,6 @@ function updateChart(history) {
 }
 
 
-//invio dati al cus
-
 async function sendValveValue(val) {
     try {
         await fetch(`${BASE_URL}/api/valve/set`, {
@@ -178,6 +172,5 @@ async function setMode(targetMode) {
     }
 }
 
-//loop interno
 setInterval(fetchStatus, 1000);
 fetchStatus();
